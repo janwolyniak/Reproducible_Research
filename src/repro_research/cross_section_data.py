@@ -292,12 +292,13 @@ def add_cross_section_transformations(frame: pd.DataFrame) -> pd.DataFrame:
             out["terms_trade"] = out["tot2"]
         elif "tot" in out.columns:
             out["terms_trade"] = out["tot"]
-    for column in PLAIN_LOG_COLUMNS:
-        if column in out.columns:
-            out[f"log_{column}"] = np.log(out[column])
-    for column in SHIFTED_LOG_COLUMNS:
-        if column in out.columns:
-            out[f"log_{column}_plus2"] = np.log(out[column] + 2)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        for column in PLAIN_LOG_COLUMNS:
+            if column in out.columns:
+                out[f"log_{column}"] = np.log(out[column])
+        for column in SHIFTED_LOG_COLUMNS:
+            if column in out.columns:
+                out[f"log_{column}_plus2"] = np.log(out[column] + 2)
     for left, right in INTERACTION_COLUMNS:
         if left in out.columns and right in out.columns:
             out[f"{left}_x_{right}"] = out[left] * out[right]

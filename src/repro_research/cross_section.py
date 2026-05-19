@@ -4,13 +4,20 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import statsmodels.api as sm
 from scipy import stats
-from statsmodels.stats.diagnostic import het_breuschpagan, linear_reset
+from statsmodels.stats.diagnostic import (
+    acorr_breusch_godfrey,
+    het_breuschpagan,
+    linear_reset,
+)
 from statsmodels.stats.outliers_influence import OLSInfluence, variance_inflation_factor
 from statsmodels.stats.stattools import durbin_watson, jarque_bera
 
@@ -278,6 +285,21 @@ INSTITUTIONAL_VARIABLES = (
     "voice_and_acc",
 )
 
+MODEL_TABLE_GROUPS = {
+    "ols_full_sample": ("re1", "re2", "re3", "re4", "re5", "re6", "re7"),
+    "ols_main": ("re2_o", "re4_o"),
+    "ols_outlier_filtered": (
+        "re1_o",
+        "re2_o",
+        "re3_o",
+        "re4_o",
+        "re5_o",
+        "re6_o",
+        "re7_o",
+    ),
+    "ols_compliance_variants": ("re4_olv", "re4_oprop"),
+}
+
 
 def _write_table(
     frame: pd.DataFrame, stem: str, *, index: bool = False
@@ -322,7 +344,8 @@ def descriptive_statistics(frame: pd.DataFrame) -> pd.DataFrame:
 
 def correlation_matrix(frame: pd.DataFrame) -> pd.DataFrame:
     columns = [column for column in CORRELATION_VARIABLES if column in frame.columns]
-    return frame[columns].corr(method="spearman", min_periods=1)
+    complete = frame[columns].dropna()
+    return complete.corr(method="spearman")
 
 
 def write_correlation_plot(correlation: pd.DataFrame) -> Path:
@@ -477,6 +500,17 @@ def model_summary_table(
     return table, models
 
 
+def select_model_group(
+    model_table: pd.DataFrame, table_name: str, model_names: tuple[str, ...]
+) -> pd.DataFrame:
+    order = {name: index for index, name in enumerate(model_names)}
+    group = model_table[model_table["model"].isin(model_names)].copy()
+    group.insert(0, "_model_order", group["model"].map(order))
+    group["table_group"] = table_name
+    group = group.sort_values(["_model_order"], kind="stable")
+    return group.drop(columns="_model_order").reset_index(drop=True)
+
+
 def institutional_specs() -> tuple[ModelSpec, ...]:
     return tuple(
         ModelSpec(
@@ -509,6 +543,7 @@ def diagnostics_table(
         )
         jb_stat, jb_pvalue, skew, kurtosis = jarque_bera(result.resid)
         shapiro_stat, shapiro_pvalue = stats.shapiro(result.resid)
+        bg_lm, bg_lm_pvalue, bg_f, bg_f_pvalue = acorr_breusch_godfrey(result, nlags=1)
         rows.append(
             {
                 "model": name,
@@ -526,6 +561,10 @@ def diagnostics_table(
                 "breusch_pagan_f": float(bp_f),
                 "breusch_pagan_f_p_value": float(bp_f_pvalue),
                 "durbin_watson_stat": float(durbin_watson(result.resid)),
+                "breusch_godfrey_lm_lag1": float(bg_lm),
+                "breusch_godfrey_lm_lag1_p_value": float(bg_lm_pvalue),
+                "breusch_godfrey_f_lag1": float(bg_f),
+                "breusch_godfrey_f_lag1_p_value": float(bg_f_pvalue),
             }
         )
     return pd.DataFrame(rows)
@@ -646,8 +685,17 @@ def write_cross_section_documentation(paths: tuple[Path, ...]) -> Path:
                 "  columns from `model_data2` and dropping the first reshaped row before",
                 "  rendering.",
                 "- The correlation matrix uses Spearman correlations on the same selected",
-                "  variable set. Plot pixels are best-effort; the CSV matrix is the",
-                "  numerical reproduction target.",
+                "  variable set and the same complete-observation rule as",
+                '  `cor(..., use = "complete.obs", method = "spearman")` in R.',
+                "  Plot pixels are best-effort; the CSV matrix is the numerical",
+                "  reproduction target.",
+                "- `ols_main` mirrors the R `reg_table1.html` target by exporting",
+                "  `re2_o` and `re4_o`. `ols_outlier_filtered` keeps the full",
+                "  `re1_o`-`re7_o` robustness family, so `re2_o` and `re4_o` also",
+                "  appear there.",
+                "- `ols_compliance_variants` mirrors the combined compliance table",
+                "  target with `re4_olv` and `re4_oprop`; institutional alternatives",
+                "  mirror the six World Bank governance replacements.",
                 "- OLS tables use `statsmodels` OLS with HC3 robust standard errors,",
                 '  matching the R workflow\'s `sandwich::vcovHC(..., type = "HC3")`',
                 "  publication-table intent.",
@@ -655,6 +703,12 @@ def write_cross_section_documentation(paths: tuple[Path, ...]) -> Path:
                 "  loader uses the canonical `terms_trade` fallback documented in Phase 2.",
                 "  The outlier-filtered models use `model_data4_o`, where `tot2` is",
                 "  present and mapped to `terms_trade`.",
+                "- Diagnostics reproduce RESET, Shapiro-Wilk, Breusch-Pagan,",
+                "  Durbin-Watson statistics, and lag-1 Breusch-Godfrey",
+                "  autocorrelation p-values. Python does not expose an exact",
+                "  `lmtest::dwtest` equivalent through `statsmodels`, so the",
+                "  Breusch-Godfrey p-value is the documented autocorrelation",
+                "  p-value target.",
                 "- Diagnostic p-values may differ at tiny finite-sample levels because",
                 "  Python and R expose slightly different defaults for some tests.",
                 "",
@@ -701,8 +755,9 @@ def write_cross_section_outputs() -> CrossSectionResult:
 
     model_table, models = model_summary_table(MODEL_SPECS, prepared)
     paths.extend(_write_table(model_table, "ols_models"))
-    for group_name, group in model_table.groupby("table_group", sort=True):
-        paths.extend(_write_table(group.reset_index(drop=True), group_name))
+    for group_name, model_names in MODEL_TABLE_GROUPS.items():
+        group = select_model_group(model_table, group_name, model_names)
+        paths.extend(_write_table(group, group_name))
 
     inst_table, inst_models = model_summary_table(institutional_specs(), prepared)
     paths.extend(_write_table(inst_table, "ols_institutional_variants"))
