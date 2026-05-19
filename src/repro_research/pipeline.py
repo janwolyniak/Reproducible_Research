@@ -73,6 +73,7 @@ def run_all() -> int:
         _run_python_script(PROJECT_ROOT / "scripts" / "run_panel_prep.py"),
         _run_python_script(PROJECT_ROOT / "scripts" / "run_cross_section_data.py"),
         _run_python_script(PROJECT_ROOT / "scripts" / "run_cross_section.py"),
+        _run_python_script(PROJECT_ROOT / "scripts" / "run_panel.py"),
         _run_python_script(PROJECT_ROOT / "scripts" / "inventory_data.py"),
     ]
     log_path = write_run_summary(steps)

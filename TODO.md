@@ -257,24 +257,33 @@ Kinga implementation update, 2026-05-19:
 
 ## Phase 4: Panel Reproduction
 
-- [ ] Reproduce panel descriptive statistics and correlation outputs from
-  `panel/inorder_panel.R`.
-- [ ] Build panel indexes by country and year.
-- [ ] Recreate pooled OLS, between, first-difference, fixed-effects, and
-  random-effects models.
-- [ ] Recreate the reduced/small panel specifications used for 2010-2019 and
-  the broader 1990-2020 comparison where applicable.
-- [ ] Reproduce specification tests: LM test, F test for fixed effects, and
-  Hausman test.
-- [ ] Reproduce diagnostic tests: serial correlation, heteroskedasticity, and
-  cross-sectional dependence.
-- [ ] Implement robust covariance variants used in the R workflow, including
+- [x] Reproduce panel descriptive statistics and correlation outputs from
+  `panel/inorder_panel.R`. See `outputs/panel/descriptive_statistics.{csv,html}`
+  and `outputs/panel/spearman_correlation_matrix.{csv,html}` plus
+  `outputs/panel/figures/correlation_plot.png`.
+- [x] Build panel indexes by country and year. `repro_research.panel._indexed`
+  applies `set_index(["country", "Year"])` for every model fit.
+- [x] Recreate pooled OLS, between, first-difference, fixed-effects, and
+  random-effects models. See `repro_research.panel.MODEL_SPECS` covering all
+  five kinds for three blocks; outputs in `outputs/panel/models_*.{csv,html}`.
+- [x] Recreate the reduced/small panel specifications used for 2010-2019 and
+  the broader 1990-2020 comparison where applicable. `models_small_full`,
+  `models_small_reduced`, and `models_main_reduced` cover the three blocks.
+- [x] Reproduce specification tests: LM test, F test for fixed effects, and
+  Hausman test. See `outputs/panel/specification_tests.{csv,html}`.
+- [x] Reproduce diagnostic tests: serial correlation, heteroskedasticity, and
+  cross-sectional dependence. See `outputs/panel/diagnostic_tests.{csv,html}`
+  (Wooldridge, Breusch-Pagan, Pesaran CD).
+- [x] Implement robust covariance variants used in the R workflow, including
   Driscoll-Kraay, Arellano-style, clustered, or double-clustered standard errors
-  where Python support is available.
-- [ ] Recreate alternative fixed-effects regressions for compliance components
-  such as basic, civil, political, and property compliance.
-- [ ] Export publication-ready tables and figures to `outputs/panel/`.
-- [ ] Write `docs/panel_reproduction.md` explaining what matches the R outputs
+  where Python support is available. See `outputs/panel/fixed_effects_main.{csv,
+  html}`; Driscoll-Kraay implemented locally with the
+  `floor(4*(T/100)^(2/9))` lag rule.
+- [x] Recreate alternative fixed-effects regressions for compliance components
+  such as basic, civil, political, and property compliance. See
+  `outputs/panel/fixed_effects_compliance_categories.{csv,html}`.
+- [x] Export publication-ready tables and figures to `outputs/panel/`.
+- [x] Write `docs/panel_reproduction.md` explaining what matches the R outputs
   and where Python results differ.
 
 Owner: Iwo. Reviewer: Jan.
