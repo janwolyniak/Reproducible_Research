@@ -8,6 +8,10 @@ exists on disk.
 
 The result is written to ``docs/phase0_audit.md``.
 
+This script intentionally uses only the Python standard library and a local
+``Rscript`` executable. Phase 0 runs before the Python environment baseline is
+defined, so the audit should not depend on pandas or pyreadr being installed.
+
 Usage::
 
     py scripts/audit_phase0.py [--report PATH]
@@ -15,35 +19,16 @@ Usage::
 from __future__ import annotations
 
 import argparse
+import shutil
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable
-
-import pandas as pd
-import pyreadr
+from urllib.parse import unquote
 
 
 REPO = Path(__file__).resolve().parent.parent
-RDS_DIRS = [REPO / "cross-section" / "data", REPO / "panel" / "data_panel"]
-
-COUNTRY_NAME_CANDIDATES = (
-    "Country",
-    "country",
-    "country_name",
-    "Country_Name",
-    "Country Name",
-    "cname",
-)
-COUNTRY_CODE_CANDIDATES = (
-    "Country Code",
-    "Country_Code",
-    "country_text_id",
-    "iso3",
-    "ISO3",
-    "iso3c",
-)
-YEAR_CANDIDATES = ("Year", "year", "YEAR")
+DATA_DIRS = [REPO / "cross-section" / "data", REPO / "panel" / "data_panel"]
 
 NAME_VARIANT_GROUPS: dict[str, tuple[str, ...]] = {
     "GDP growth": ("GDP_growth", "GDPgrowth", "gdp_growth"),
@@ -111,6 +96,103 @@ CONTRACT_PATHS = [
     "panel/panel_tables/model_output2.html",
 ]
 
+R_AUDIT_SCRIPT = r"""
+args <- commandArgs(trailingOnly = TRUE)
+path <- args[[1]]
+stem <- tools::file_path_sans_ext(basename(path))
+
+enc <- function(x) {
+  text <- iconv(as.character(x), from = "", to = "UTF-8", sub = "byte")
+  utils::URLencode(gsub("\n", " ", text, fixed = TRUE), reserved = TRUE)
+}
+
+first_present <- function(cols, candidates) {
+  hit <- candidates[candidates %in% cols]
+  if (length(hit) == 0) "" else hit[[1]]
+}
+
+emit <- function(...) {
+  cat(paste(vapply(list(...), enc, character(1)), collapse = "\t"), "\n", sep = "")
+}
+
+as_frame_list <- function(obj) {
+  if (is.data.frame(obj)) {
+    out <- list(obj)
+    names(out) <- stem
+    return(out)
+  }
+  if (is.list(obj)) {
+    keep <- vapply(obj, is.data.frame, logical(1))
+    return(obj[keep])
+  }
+  list()
+}
+
+ext <- tolower(tools::file_ext(path))
+obj <- if (ext == "dta") {
+  foreign::read.dta(path, convert.factors = TRUE)
+} else {
+  readRDS(path)
+}
+
+frames <- as_frame_list(obj)
+if (length(frames) == 0) {
+  stop("No data.frame object found")
+}
+
+country_name_candidates <- c("Country", "country", "country_name", "Country_Name",
+                             "Country Name", "cname")
+country_code_candidates <- c("Country Code", "Country_Code", "country_text_id",
+                             "iso3", "ISO3", "iso3c")
+year_candidates <- c("Year", "year", "YEAR")
+
+for (i in seq_along(frames)) {
+  df <- frames[[i]]
+  obj_name <- names(frames)[[i]]
+  if (is.null(obj_name) || obj_name == "") obj_name <- stem
+  cols <- names(df)
+
+  country_name_col <- first_present(cols, country_name_candidates)
+  country_code_col <- first_present(cols, country_code_candidates)
+  year_col <- first_present(cols, year_candidates)
+  country_col <- if (country_name_col != "") country_name_col else country_code_col
+
+  countries <- ""
+  if (country_col != "") countries <- length(unique(stats::na.omit(df[[country_col]])))
+
+  year_min <- ""
+  year_max <- ""
+  year_n <- ""
+  if (year_col != "") {
+    years <- suppressWarnings(as.numeric(df[[year_col]]))
+    years <- years[!is.na(years)]
+    if (length(years) > 0) {
+      year_min <- min(years)
+      year_max <- max(years)
+      year_n <- length(unique(years))
+    }
+  }
+
+  emit("FRAME", obj_name, nrow(df), ncol(df), country_name_col, country_code_col,
+       year_col, countries, year_min, year_max, year_n)
+
+  if (country_col != "") {
+    values <- sort(unique(as.character(stats::na.omit(df[[country_col]]))))
+    for (value in values) {
+      emit("COUNTRY", obj_name, country_col, value)
+    }
+  }
+
+  for (col in cols) {
+    values <- df[[col]]
+    missing <- sum(is.na(values))
+    pct <- if (nrow(df) == 0) 0 else round(missing / nrow(df) * 100, 1)
+    dtype <- paste(class(values), collapse = ",")
+    emit("COLUMN", obj_name, col, dtype, missing, pct)
+  }
+}
+"""
+
 
 @dataclass
 class FrameSummary:
@@ -127,141 +209,144 @@ class FrameSummary:
     n_unique_years: int | None
     columns: list[tuple[str, str, int, float]] = field(default_factory=list)
     column_set: set[str] = field(default_factory=set)
+    countries: set[str] = field(default_factory=set)
 
 
-def _first_present(df: pd.DataFrame, candidates: Iterable[str]) -> str | None:
-    for c in candidates:
-        if c in df.columns:
-            return c
-    return None
+def _decode_fields(line: str) -> list[str]:
+    return [unquote(part) for part in line.rstrip("\n").split("\t")]
 
 
-def _load(path: Path) -> dict[str, pd.DataFrame]:
-    if path.suffix.lower() == ".dta":
-        return {path.stem: pd.read_stata(path)}
-
-    result = pyreadr.read_r(str(path))
-    return {k: v for k, v in result.items() if isinstance(v, pd.DataFrame)}
+def _none_if_empty(value: str) -> str | None:
+    return value if value else None
 
 
-def summarize_frame(df: pd.DataFrame, source: Path, obj_name: str) -> FrameSummary:
-    n_rows, n_cols = df.shape
-    country_name_col = _first_present(df, COUNTRY_NAME_CANDIDATES)
-    country_code_col = _first_present(df, COUNTRY_CODE_CANDIDATES)
-    year_col = _first_present(df, YEAR_CANDIDATES)
+def _int_or_none(value: str) -> int | None:
+    if value == "":
+        return None
+    return int(float(value))
 
-    n_unique_countries: int | None = None
-    if country_name_col is not None:
-        n_unique_countries = int(df[country_name_col].nunique(dropna=True))
-    elif country_code_col is not None:
-        n_unique_countries = int(df[country_code_col].nunique(dropna=True))
 
-    year_min = year_max = n_unique_years = None
-    if year_col is not None:
-        years = pd.to_numeric(df[year_col], errors="coerce").dropna()
-        if not years.empty:
-            year_min = int(years.min())
-            year_max = int(years.max())
-            n_unique_years = int(years.nunique())
-
-    miss = df.isna().sum()
-    columns: list[tuple[str, str, int, float]] = []
-    for col in df.columns:
-        m = int(miss[col])
-        pct = round(m / n_rows * 100, 1) if n_rows else 0.0
-        columns.append((str(col), str(df[col].dtype), m, pct))
-
-    return FrameSummary(
-        relpath=str(source.relative_to(REPO)).replace("\\", "/"),
-        object_name=obj_name,
-        n_rows=int(n_rows),
-        n_cols=int(n_cols),
-        country_name_col=country_name_col,
-        country_code_col=country_code_col,
-        year_col=year_col,
-        n_unique_countries=n_unique_countries,
-        year_min=year_min,
-        year_max=year_max,
-        n_unique_years=n_unique_years,
-        columns=columns,
-        column_set=set(df.columns),
+def _run_r_audit(path: Path, rscript: str) -> list[str]:
+    result = subprocess.run(
+        [rscript, "--vanilla", "-e", R_AUDIT_SCRIPT, str(path)],
+        check=False,
+        capture_output=True,
+        text=True,
     )
+    if result.returncode != 0:
+        message = result.stderr.strip() or result.stdout.strip()
+        raise RuntimeError(message)
+    return result.stdout.splitlines()
 
 
-def collect_summaries() -> tuple[list[FrameSummary], dict[Path, dict[str, pd.DataFrame]]]:
-    summaries: list[FrameSummary] = []
-    raw: dict[Path, dict[str, pd.DataFrame]] = {}
-    for d in RDS_DIRS:
-        if not d.is_dir():
-            print(f"[WARN] missing dir: {d}", file=sys.stderr)
+def _parse_r_output(source: Path, lines: list[str]) -> list[FrameSummary]:
+    relpath = str(source.relative_to(REPO)).replace("\\", "/")
+    frames: dict[str, FrameSummary] = {}
+
+    for line in lines:
+        fields = _decode_fields(line)
+        if not fields:
             continue
-        files = sorted([*d.glob("*.rds"), *d.glob("*.dta")])
+        kind = fields[0]
+        if kind == "FRAME":
+            obj_name = fields[1]
+            frames[obj_name] = FrameSummary(
+                relpath=relpath,
+                object_name=obj_name,
+                n_rows=int(fields[2]),
+                n_cols=int(fields[3]),
+                country_name_col=_none_if_empty(fields[4]),
+                country_code_col=_none_if_empty(fields[5]),
+                year_col=_none_if_empty(fields[6]),
+                n_unique_countries=_int_or_none(fields[7]),
+                year_min=_int_or_none(fields[8]),
+                year_max=_int_or_none(fields[9]),
+                n_unique_years=_int_or_none(fields[10]),
+            )
+        elif kind == "COUNTRY":
+            obj_name = fields[1]
+            if obj_name in frames:
+                frames[obj_name].countries.add(fields[3])
+        elif kind == "COLUMN":
+            obj_name = fields[1]
+            if obj_name in frames:
+                name = fields[2]
+                dtype = fields[3]
+                n_miss = int(fields[4])
+                pct = float(fields[5])
+                frames[obj_name].columns.append((name, dtype, n_miss, pct))
+                frames[obj_name].column_set.add(name)
+
+    return list(frames.values())
+
+
+def collect_summaries(rscript: str) -> tuple[list[FrameSummary], list[tuple[str, str]]]:
+    summaries: list[FrameSummary] = []
+    errors: list[tuple[str, str]] = []
+
+    for data_dir in DATA_DIRS:
+        if not data_dir.is_dir():
+            errors.append((str(data_dir.relative_to(REPO)), "directory missing"))
+            continue
+        files = sorted([*data_dir.glob("*.rds"), *data_dir.glob("*.dta")])
         for data_file in files:
             try:
-                objs = _load(data_file)
-            except Exception as exc:
-                print(f"[ERROR] cannot read {data_file}: {exc}", file=sys.stderr)
-                continue
-            if not objs:
-                print(f"[WARN] no DataFrame in {data_file}", file=sys.stderr)
-                continue
-            raw[data_file] = objs
-            for name, df in objs.items():
-                display = name if name else data_file.stem
-                summaries.append(summarize_frame(df, data_file, display))
-    return summaries, raw
+                output = _run_r_audit(data_file, rscript)
+                summaries.extend(_parse_r_output(data_file, output))
+            except Exception as exc:  # noqa: BLE001 - report all audit read failures.
+                relpath = str(data_file.relative_to(REPO)).replace("\\", "/")
+                errors.append((relpath, str(exc)))
+
+    return summaries, errors
 
 
 def build_name_variant_table(summaries: list[FrameSummary]) -> dict[str, dict[str, list[str]]]:
     table: dict[str, dict[str, list[str]]] = {}
     for group_name, variants in NAME_VARIANT_GROUPS.items():
         table[group_name] = {v: [] for v in variants}
-        for s in summaries:
-            for v in variants:
-                if v in s.column_set:
-                    table[group_name][v].append(f"{s.relpath} ({s.object_name})")
+        for summary in summaries:
+            for variant in variants:
+                if variant in summary.column_set:
+                    table[group_name][variant].append(
+                        f"{summary.relpath} ({summary.object_name})"
+                    )
     return table
 
 
-def outlier_rule_check(
-    raw: dict[Path, dict[str, pd.DataFrame]],
-) -> dict[str, object]:
-    """Compare cross-section model_data4 vs model_data4_o.
-
-    The contract notes the paper says five outliers were removed leaving 157
-    countries, while OLS tables show 121-122 observations.
-    """
-    xs_dir = REPO / "cross-section" / "data"
-    candidates = {
-        "model_data": xs_dir / "model_data.rds",
-        "model_data4": xs_dir / "model_data4.rds",
-        "model_data4_o": xs_dir / "model_data4_o.rds",
+def outlier_rule_check(summaries: list[FrameSummary]) -> dict[str, object]:
+    frames = {
+        Path(summary.relpath).stem: summary
+        for summary in summaries
+        if summary.relpath
+        in {
+            "cross-section/data/model_data.rds",
+            "cross-section/data/model_data4.rds",
+            "cross-section/data/model_data4_o.rds",
+        }
     }
-    frames: dict[str, pd.DataFrame] = {}
-    for key, path in candidates.items():
-        if path in raw:
-            obj = next(iter(raw[path].values()))
-            frames[key] = obj
 
-    out: dict[str, object] = {}
     rows = []
-    for key, df in frames.items():
-        cn = _first_present(df, COUNTRY_NAME_CANDIDATES) or _first_present(
-            df, COUNTRY_CODE_CANDIDATES
+    for key in ("model_data", "model_data4", "model_data4_o"):
+        summary = frames.get(key)
+        if summary is None:
+            continue
+        rows.append(
+            {
+                "dataset": key,
+                "rows": summary.n_rows,
+                "countries": summary.n_unique_countries,
+                "country_col": summary.country_name_col or summary.country_code_col,
+            }
         )
-        n_countries = df[cn].nunique(dropna=True) if cn else None
-        rows.append({"dataset": key, "rows": len(df), "countries": n_countries, "country_col": cn})
-    out["rows"] = rows
 
+    out: dict[str, object] = {"rows": rows}
     if "model_data4" in frames and "model_data4_o" in frames:
-        a, b = frames["model_data4"], frames["model_data4_o"]
-        ca = _first_present(a, COUNTRY_NAME_CANDIDATES) or _first_present(a, COUNTRY_CODE_CANDIDATES)
-        cb = _first_present(b, COUNTRY_NAME_CANDIDATES) or _first_present(b, COUNTRY_CODE_CANDIDATES)
-        if ca and cb:
-            countries_a = set(a[ca].dropna().astype(str))
-            countries_b = set(b[cb].dropna().astype(str))
-            out["dropped_from_model_data4"] = sorted(countries_a - countries_b)
-            out["added_in_model_data4_o"] = sorted(countries_b - countries_a)
+        out["dropped_from_model_data4"] = sorted(
+            frames["model_data4"].countries - frames["model_data4_o"].countries
+        )
+        out["added_in_model_data4_o"] = sorted(
+            frames["model_data4_o"].countries - frames["model_data4"].countries
+        )
     return out
 
 
@@ -274,6 +359,7 @@ def render_report(
     variants: dict[str, dict[str, list[str]]],
     outlier: dict[str, object],
     coverage: list[tuple[str, bool]],
+    errors: list[tuple[str, str]],
 ) -> str:
     lines: list[str] = []
     lines.append("# Phase 0 Audit Report")
@@ -284,39 +370,38 @@ def render_report(
     )
     lines.append("")
 
-    # 1. Inventory summary
     lines.append("## 1. Data inventory")
     lines.append("")
     lines.append("| File | Object | Rows | Cols | Country col | Year col | Countries | Years |")
     lines.append("| --- | --- | ---: | ---: | --- | --- | ---: | --- |")
-    for s in summaries:
-        ccol = s.country_name_col or s.country_code_col or "-"
-        ycol = s.year_col or "-"
+    for summary in summaries:
+        ccol = summary.country_name_col or summary.country_code_col or "-"
+        ycol = summary.year_col or "-"
         years = (
-            f"{s.year_min}-{s.year_max} ({s.n_unique_years})"
-            if s.year_min is not None
+            f"{summary.year_min}-{summary.year_max} ({summary.n_unique_years})"
+            if summary.year_min is not None
             else "-"
         )
-        countries = s.n_unique_countries if s.n_unique_countries is not None else "-"
+        countries = (
+            summary.n_unique_countries if summary.n_unique_countries is not None else "-"
+        )
         lines.append(
-            f"| `{s.relpath}` | `{s.object_name}` | {s.n_rows} | {s.n_cols} | "
-            f"{ccol} | {ycol} | {countries} | {years} |"
+            f"| `{summary.relpath}` | `{summary.object_name}` | {summary.n_rows} | "
+            f"{summary.n_cols} | {ccol} | {ycol} | {countries} | {years} |"
         )
     lines.append("")
 
-    # 2. Per-file column detail
     lines.append("## 2. Per-file column detail")
-    for s in summaries:
+    for summary in summaries:
         lines.append("")
-        lines.append(f"### `{s.relpath}` :: `{s.object_name}`")
+        lines.append(f"### `{summary.relpath}` :: `{summary.object_name}`")
         lines.append("")
         lines.append("| Column | Dtype | Missing | % Missing |")
         lines.append("| --- | --- | ---: | ---: |")
-        for name, dtype, n_miss, pct in s.columns:
+        for name, dtype, n_miss, pct in summary.columns:
             lines.append(f"| `{name}` | `{dtype}` | {n_miss} | {pct}% |")
     lines.append("")
 
-    # 3. Name-variant reconciliation
     lines.append("## 3. Variable-name variants")
     lines.append("")
     lines.append(
@@ -330,13 +415,12 @@ def render_report(
         for variant, files in hits.items():
             if files:
                 lines.append(f"- `{variant}`")
-                for f in files:
-                    lines.append(f"  - {f}")
+                for file_path in files:
+                    lines.append(f"  - {file_path}")
             else:
                 lines.append(f"- `{variant}` - *(not present in any tracked file)*")
     lines.append("")
 
-    # 4. Outlier rule
     lines.append("## 4. Cross-sectional outlier rule")
     lines.append("")
     lines.append(
@@ -363,8 +447,8 @@ def render_report(
         )
         lines.append("")
         if dropped:
-            for c in dropped:  # type: ignore[union-attr]
-                lines.append(f"- {c}")
+            for country in dropped:  # type: ignore[union-attr]
+                lines.append(f"- {country}")
         else:
             lines.append("- *(none)*")
     if added:
@@ -374,11 +458,10 @@ def render_report(
             f"({len(added)}):"  # type: ignore[arg-type]
         )
         lines.append("")
-        for c in added:  # type: ignore[union-attr]
-            lines.append(f"- {c}")
+        for country in added:  # type: ignore[union-attr]
+            lines.append(f"- {country}")
     lines.append("")
 
-    # 5. Contract coverage
     lines.append("## 5. Contract artifact coverage")
     lines.append("")
     lines.append("| Path | Present |")
@@ -392,10 +475,22 @@ def render_report(
         lines.append(f"{len(missing)} contract path(s) are missing on disk.")
     lines.append("")
 
+    lines.append("## 6. Audit read errors")
+    lines.append("")
+    if errors:
+        lines.append("| Path | Error |")
+        lines.append("| --- | --- |")
+        for path, error in errors:
+            clean_error = error.replace("\n", " ")
+            lines.append(f"| `{path}` | {clean_error} |")
+    else:
+        lines.append("No audit read errors.")
+    lines.append("")
+
     return "\n".join(lines)
 
 
-def main() -> int:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--report",
@@ -403,25 +498,45 @@ def main() -> int:
         default=REPO / "docs" / "phase0_audit.md",
         help="Output markdown path (default: docs/phase0_audit.md)",
     )
+    parser.add_argument(
+        "--rscript",
+        default=shutil.which("Rscript") or "Rscript",
+        help="Path to Rscript executable (default: discovered on PATH)",
+    )
+    return parser
+
+
+def main() -> int:
+    parser = build_parser()
     args = parser.parse_args()
 
-    summaries, raw = collect_summaries()
+    if shutil.which(args.rscript) is None and not Path(args.rscript).exists():
+        print(
+            "Rscript is required for the Phase 0 audit but was not found.",
+            file=sys.stderr,
+        )
+        return 1
+
+    summaries, errors = collect_summaries(args.rscript)
     variants = build_name_variant_table(summaries)
-    outlier = outlier_rule_check(raw)
+    outlier = outlier_rule_check(summaries)
     coverage = contract_coverage()
-    report = render_report(summaries, variants, outlier, coverage)
+    report = render_report(summaries, variants, outlier, coverage, errors)
 
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(report, encoding="utf-8")
 
+    missing_contract = sum(1 for _, ok in coverage if not ok)
     print(f"Wrote {args.report.relative_to(REPO)}")
     print(
         f"  files inspected: {len({s.relpath for s in summaries})}  "
         f"frames: {len(summaries)}  "
-        f"missing contract paths: {sum(1 for _, ok in coverage if not ok)}"
+        f"read errors: {len(errors)}  "
+        f"missing contract paths: {missing_contract}"
     )
 
-    # Sanity check: surface untracked variants no one expected.
+    if errors or missing_contract:
+        return 1
     return 0
 
 

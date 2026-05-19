@@ -51,6 +51,11 @@ generated audit report is in `docs/phase0_audit.md` (regenerate with
 `py scripts/audit_phase0.py`). The following items must stay visible during
 implementation phases.
 
+- [x] Make the Phase 0 audit executable before the Phase 1 Python environment
+  exists. `scripts/audit_phase0.py` now uses only the Python standard library
+  plus local `Rscript`, reads tracked `.rds` and `.dta` inputs, fails non-zero
+  on read errors or missing contract paths, and regenerates
+  `docs/phase0_audit.md`.
 - [ ] Full upstream raw/bulk downloads are not fully present, but
   `cross-section/data/` now contains processed source-level inputs for the
   cross-sectional workflow: CCCD averages/details/growth files, V-Dem democracy
@@ -64,13 +69,13 @@ implementation phases.
 - [x] Treat `cross-section/inorder.R` and `panel/inorder_panel.R` as workflow
   evidence, not executable scripts. They contain bare section labels,
   exploratory fragments, and unresolved object references.
-- [ ] Confirm the cross-sectional outlier rule in code. The paper says five
+- [x] Confirm the cross-sectional outlier rule in code. The paper says five
   outliers were removed and the cleaned dataset has 157 countries, while the
   main OLS tables use 121-122 observations after model-wise missingness. The
   audit (`docs/phase0_audit.md`, section 4) confirms `model_data4` (162 rows)
   drops 5 countries -- Congo, Rep.; Lesotho; Luxembourg; Malta; Singapore --
-  to produce `model_data4_o` (157 rows); the OLS-table count gap still has to
-  be reproduced by replaying the model-wise missingness in Python.
+  to produce `model_data4_o` (157 rows). The OLS-table count gap still has to
+  be reproduced during Phase 3 by replaying model-wise missingness in Python.
 - [ ] Implement panel diagnostic and robust-covariance checks carefully because
   R `plm` and Python libraries may use different finite-sample corrections.
 - [x] Keep HTML/CSS styling and exact plot pixels as best-effort targets; compare
