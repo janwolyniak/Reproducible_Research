@@ -292,26 +292,36 @@ Owner: Iwo. Reviewer: Jan.
 ## Phase 5: Paper-Level Comparison and Results Documentation
 
 - [ ] Create a master results index in `outputs/README.md`.
-- [ ] Compare regenerated Python outputs against the existing R-generated HTML
+- [x] Compare regenerated Python outputs against the existing R-generated HTML
   tables and plots. Panel side: side-by-side comparison in
   `docs/panel_reproduction_results.md` covering descriptive stats, FE main,
   alt-FE compliance components, specification tests, and diagnostic tests.
-  Cross-section side pending.
+  Cross-section side: side-by-side comparison in
+  `docs/cross_section_reproduction_results.md` covering descriptive stats,
+  Spearman tests, OLS tables, institutional alternatives, diagnostics, and
+  figures.
 - [ ] Add a table-by-table and figure-by-figure reproduction checklist in
   `docs/reproduction_results.md`. Master file to be stitched by Jan from the
   panel and cross-section sub-documents. Panel checklist already in
-  `docs/panel_reproduction_results.md`.
-- [ ] Explain any non-matching results with concrete causes, such as different
+  `docs/panel_reproduction_results.md`; cross-section checklist already in
+  `docs/cross_section_reproduction_results.md`.
+- [x] Explain any non-matching results with concrete causes, such as different
   default covariance estimators, missing-value handling, lag construction, or
   package-level implementation differences. Panel-side causes documented:
   Driscoll-Kraay finite-sample correction differences between
   `linearmodels`/local SCC and R `sandwich::vcovSCC`, and the
   `plm::pbgtest` vs Breusch-Godfrey panel proxy substitution for the 2010-2019
-  serial-correlation cell.
-- [ ] Include short interpretation notes so the reviewer can see how the Python
+  serial-correlation cell. Cross-section-side causes documented:
+  `model_data2` vs exported descriptive-table sample differences and
+  plot-rendering differences between R `corrplot` and Python Seaborn.
+- [x] Include short interpretation notes so the reviewer can see how the Python
   results relate to the paper's economic argument. Panel interpretation notes
   added to `docs/panel_reproduction_results.md` (effect size, cross-section vs
   panel reconciliation, component decomposition, SE robustness, CD evidence).
+  Cross-section interpretation notes added to
+  `docs/cross_section_reproduction_results.md` (insignificant compliance
+  coefficients, convergence/control-variable pattern, and institutional
+  alternative context).
 - [ ] Ensure all final tables and figures can be regenerated from a clean clone.
 
 Owners: Jan for integration; Kinga for cross-section notes; Iwo for panel notes.
@@ -325,8 +335,25 @@ Iwo implementation update, 2026-05-19:
   specification and diagnostic test comparisons against the R reference,
   and interpretation notes tying the Phase 4 numbers to the paper's
   economic argument.
-- Cross-section sub-doc and the master `docs/reproduction_results.md`
-  index remain open and belong to Kinga and Jan respectively.
+- At the time of Iwo's update, the cross-section sub-doc and the master
+  `docs/reproduction_results.md` index remained open.
+
+Kinga implementation update, 2026-05-19:
+
+- Added `docs/cross_section_reproduction_results.md` with the cross-sectional
+  Phase 5 comparison against `cross-section/tables_and_other/`.
+- Documented table-by-table and figure-by-figure status for descriptive
+  statistics, Spearman tests, correlation plot, main OLS tables, compliance
+  variants, institutional alternatives, diagnostics, and influence plots.
+- Recorded concrete mismatch causes for the descriptive-statistics sample,
+  and plot-rendering differences. The `rich`/`poor` Spearman rows are
+  reproduced using the R-described median split on `GDPpc`.
+- Added interpretation notes tying the cross-sectional null compliance result
+  to the paper's economic argument and to the institutional-variable robustness
+  checks.
+- The remaining Phase 5 open items are Jan-owned integration tasks:
+  `outputs/README.md`, master `docs/reproduction_results.md`, and clean-clone
+  final verification.
 
 ## Phase 6: Docker and Full Reproducibility
 

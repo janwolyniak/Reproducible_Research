@@ -394,12 +394,12 @@ def _spearman_for_group(
 
 def grouped_spearman(frame: pd.DataFrame, right: str) -> pd.DataFrame:
     groups: list[tuple[str, pd.DataFrame]] = [("without_grouping", frame)]
-    if "GDPpc2015" in frame.columns:
-        median = frame["GDPpc2015"].median(skipna=True)
+    if "GDPpc" in frame.columns:
+        median = frame["GDPpc"].median(skipna=True)
         groups.extend(
             [
-                ("rich", frame[frame["GDPpc2015"] >= median]),
-                ("poor", frame[frame["GDPpc2015"] < median]),
+                ("rich", frame[frame["GDPpc"] >= median]),
+                ("poor", frame[frame["GDPpc"] < median]),
             ]
         )
     if "continent" in frame.columns:

@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-MPLCONFIGDIR = Path(os.environ.get("TMPDIR", "/tmp")) / "repro_research_mpl"
+MPLCONFIGDIR = ROOT / "outputs" / "intermediate" / "matplotlib"
 MPLCONFIGDIR.mkdir(parents=True, exist_ok=True)
 os.environ.setdefault("MPLCONFIGDIR", str(MPLCONFIGDIR))
 sys.path.insert(0, str(ROOT / "src"))
