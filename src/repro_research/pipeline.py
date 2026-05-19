@@ -69,12 +69,14 @@ def run_all() -> int:
         return 1
 
     phase0 = _run_python_script(PROJECT_ROOT / "scripts" / "audit_phase0.py")
-    log_path = write_run_summary([phase0])
+    inventory = _run_python_script(PROJECT_ROOT / "scripts" / "inventory_data.py")
+    log_path = write_run_summary([phase0, inventory])
 
-    if phase0.stdout:
-        print(phase0.stdout, end="")
-    if phase0.stderr:
-        print(phase0.stderr, file=sys.stderr, end="")
+    for result in (phase0, inventory):
+        if result.stdout:
+            print(result.stdout, end="")
+        if result.stderr:
+            print(result.stderr, file=sys.stderr, end="")
     print(f"Wrote {log_path.relative_to(PROJECT_ROOT)}")
 
-    return phase0.returncode
+    return 0 if phase0.ok and inventory.ok else 1

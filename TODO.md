@@ -134,9 +134,9 @@ Implementation update, 2026-05-19:
 
 ## Phase 2: Data Preparation in Python
 
-- [ ] Inventory all `.rds` inputs in `cross-section/data/` and
+- [x] Inventory all `.rds` inputs in `cross-section/data/` and
   `panel/data_panel/`.
-- [ ] Convert required `.rds` files to CSV or load them directly in Python with a
+- [x] Convert required `.rds` files to CSV or load them directly in Python with a
   documented, repeatable path.
 - [ ] Build reusable data-loading functions with explicit schemas and clear
   handling of missing values, categorical fields, country identifiers, and year
@@ -150,6 +150,22 @@ Implementation update, 2026-05-19:
 
 Owners: Kinga for cross-sectional data; Iwo for panel data; Jan for shared
 loader integration.
+
+Jan implementation update, 2026-05-19:
+
+- Added shared source readers in `src/repro_research/data_io.py` for tracked
+  `.rds`, `.dta`, and `.csv` data, plus `DatasetSpec` metadata for
+  cross-sectional and panel source groups.
+- Added `scripts/inventory_data.py`, which inventories all tracked
+  cross-sectional and panel source files and writes `docs/data_inventory.csv`
+  plus the shared scaffold in `docs/data_dictionary.md`.
+- Wired `scripts/run_all.py` to regenerate the data inventory after the Phase 0
+  audit, so Jan's shared Phase 2 integration runs through the same
+  reproducibility entry point.
+- The remaining Phase 2 checkboxes are not fully completable by Jan alone:
+  model-specific schemas, missing-value rules, categorical handling,
+  transformations, and final variable definitions depend on Kinga's
+  cross-sectional preparation code and Iwo's panel preparation code.
 
 ## Phase 3: Cross-Sectional Reproduction
 

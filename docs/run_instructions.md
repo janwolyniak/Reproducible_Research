@@ -29,8 +29,21 @@ python scripts/run_all.py
 ```
 
 At the Phase 1 baseline, this command creates expected output directories,
-validates the project layout, regenerates `docs/phase0_audit.md`, and writes a
-run log to `outputs/logs/run_all_summary.txt`.
+validates the project layout, regenerates `docs/phase0_audit.md`, refreshes the
+Phase 2 shared data inventory in `docs/data_inventory.csv` and
+`docs/data_dictionary.md`, and writes a run log to
+`outputs/logs/run_all_summary.txt`.
+
+## Inventory Source Data
+
+```bash
+python scripts/inventory_data.py
+```
+
+This command reads every tracked `.rds` and `.dta` source registered in
+`src/repro_research/paths.py`, records row counts, column counts, detected
+country/year identifier columns, missing-cell counts, column names, and dtypes,
+then refreshes the shared Phase 2 data dictionary scaffold.
 
 ## RDS Conversion Helper
 
