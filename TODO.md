@@ -48,36 +48,42 @@ Owner: Jan, with review by Kinga and Iwo.
 
 The detailed audit contract is in `docs/reproduction_contract.md`. The machine-
 generated audit report is in `docs/phase0_audit.md` (regenerate with
-`py scripts/audit_phase0.py`). The following items must stay visible during
+`python3 scripts/audit_phase0.py`). The following items must stay visible during
 implementation phases.
 
-- [x] Make the Phase 0 audit executable before the Phase 1 Python environment
-  exists. `scripts/audit_phase0.py` now uses only the Python standard library
-  plus local `Rscript`, reads tracked `.rds` and `.dta` inputs, fails non-zero
-  on read errors or missing contract paths, and regenerates
+- [x] Make the Phase 0 audit executable against the tracked data. The audit
+  script reads tracked `.rds` and `.dta` inputs with Python, fails non-zero on
+  read errors or missing contract paths, and regenerates
   `docs/phase0_audit.md`.
-- [ ] Full upstream raw/bulk downloads are not fully present, but
-  `cross-section/data/` now contains processed source-level inputs for the
-  cross-sectional workflow: CCCD averages/details/growth files, V-Dem democracy
-  averages, World Bank-style variable extracts, CEPII geography
-  `geo_cepii.dta`, and grouping data in `oth_char.rds`. Until raw acquisition
-  is expanded, these tracked input files are the source of record.
-- [ ] Reconcile variable names before writing reusable loaders:
+- [x] Treat the tracked processed extracts as authoritative for this project.
+  Upstream raw/bulk-download provenance is intentionally out of scope for this
+  reproduction because `cross-section/data/` now contains source-level extracts:
+  CCCD averages/details/growth files, V-Dem democracy averages,
+  World Bank-style variable extracts, CEPII geography `geo_cepii.dta`, and
+  grouping data in `oth_char.rds`.
+- [x] Reconcile variable names before writing reusable loaders:
   `GDP_growth`/`GDPgrowth`, `tot`/`tot2`/`tot_growth`,
-  `Country Code`/`Country_Code`/`Country_Name`/`Country`/`cname`, and
-  `gov_exp_milit`/`gov_exp_mil`.
+  `Country Code`/`Country_Code`/`Country_Name`/`Country`/`cname`,
+  `country_name`/`country_text_id`/`iso3`/`iso3c`, and
+  `gov_exp_milit`/`gov_exp_mil`. See `docs/phase0_audit.md`, section 5.
+- [x] Map final cross-sectional variables to tracked input sources and document
+  local lineage/attrition from source extracts into `model_data*.rds`. See
+  `docs/phase0_audit.md`, sections 2-4.
 - [x] Treat `cross-section/inorder.R` and `panel/inorder_panel.R` as workflow
   evidence, not executable scripts. They contain bare section labels,
   exploratory fragments, and unresolved object references.
 - [x] Confirm the cross-sectional outlier rule in code. The paper says five
   outliers were removed and the cleaned dataset has 157 countries, while the
   main OLS tables use 121-122 observations after model-wise missingness. The
-  audit (`docs/phase0_audit.md`, section 4) confirms `model_data4` (162 rows)
+  audit (`docs/phase0_audit.md`, sections 6-7) confirms `model_data4` (162 rows)
   drops 5 countries -- Congo, Rep.; Lesotho; Luxembourg; Malta; Singapore --
-  to produce `model_data4_o` (157 rows). The OLS-table count gap still has to
-  be reproduced during Phase 3 by replaying model-wise missingness in Python.
-- [ ] Implement panel diagnostic and robust-covariance checks carefully because
-  R `plm` and Python libraries may use different finite-sample corrections.
+  to produce `model_data4_o` (157 rows), recomputes the preferred-model
+  influence diagnostics, and explains the 121-122 observation OLS table counts.
+- [x] Record the panel diagnostic and robust-covariance caveat as a Phase 4
+  implementation requirement. The actual LM/F/Hausman tests, serial
+  correlation, heteroskedasticity, cross-sectional dependence, and
+  Driscoll-Kraay/clustered covariance outputs remain in Phase 4 because they
+  require the panel model implementation.
 - [x] Keep HTML/CSS styling and exact plot pixels as best-effort targets; compare
   numerical table values and plot source data instead.
 

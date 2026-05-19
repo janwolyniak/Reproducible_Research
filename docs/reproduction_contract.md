@@ -221,23 +221,29 @@ package, estimator, and observed difference in `docs/reproduction_results.md`.
    `model_data`, `model_data2`, `model_data4`, `model_data4_o`, `small_plm`,
    `small_pdata`, `small_pdata.frame`, `model`, `re4_olv`, and related objects.
    The `.rds` files are therefore treated as the current data source of record.
-3. Variable names are inconsistent across artifacts:
+3. Variable names are inconsistent across artifacts, but the Phase 0 audit now
+   inventories the variants that loaders must normalize:
    - `GDP_growth` in cross-sectional data versus `GDPgrowth` in panel data.
    - `tot`, `tot2`, and `tot_growth` across paper, R scripts, and data files.
    - `Country Code`, `Country_Code`, `Country_Name`, `Country`, and `cname`.
+   - `country_name`, `country_text_id`, `iso3`, and `iso3c` in source extracts.
    - `gov_exp_milit` versus `gov_exp_mil`.
 4. The cross-sectional paper text says five outliers were removed and refers to
    a final sample of 157 countries, but the main reported OLS tables use 121-122
-   observations after model-wise missing-value handling.
+   observations after model-wise missing-value handling. The Phase 0 audit now
+   verifies both the five-country influence rule and the model-wise missingness
+   counts from tracked files.
 5. The panel script contains likely copy-paste issues in diagnostics, including
    tests run on an undefined `model` until it is later assigned as `fixed`.
-6. Full upstream raw/bulk downloads are not fully present, but
-   `cross-section/data/` now contains processed source-level inputs for the
-   cross-sectional workflow: CCCD averages/details/growth files, V-Dem
-   democracy averages, World Bank-style variable extracts, CEPII geography
-   `geo_cepii.dta`, and grouping data in `oth_char.rds`. The reproduction
-   therefore starts from tracked input files unless later phases add broader
-   raw-data acquisition.
+   Panel diagnostics and robust-covariance checks are therefore a Phase 4 model
+   implementation requirement, not a Phase 0 data-audit blocker. The Python
+   reproduction must document any finite-sample correction differences from
+   R `plm`.
+6. Full upstream raw/bulk-download provenance is intentionally out of scope for
+   this reproduction. The audit treats tracked source-level extracts in
+   `cross-section/data/` as authoritative: CCCD averages/details/growth files,
+   V-Dem democracy averages, World Bank-style variable extracts, CEPII geography
+   `geo_cepii.dta`, and grouping data in `oth_char.rds`.
 7. The PDF is the source for the research question, variable definitions, and
    reported target tables. The R exported HTML files are the source for exact
    machine-readable table values where parsing is easier than PDF extraction.
