@@ -51,9 +51,12 @@ generated audit report is in `docs/phase0_audit.md` (regenerate with
 `py scripts/audit_phase0.py`). The following items must stay visible during
 implementation phases.
 
-- [ ] Raw upstream data files are not present for World Bank, V-Dem, CCCD, legal
-  origins, continent groups, or colonization status. Until raw acquisition is
-  added, the tracked `.rds` files are the source of record.
+- [ ] Full raw upstream downloads are not present for World Bank, V-Dem, CCCD,
+  legal origins, continent groups, or colonization status. The repository does
+  include processed upstream-derived `.rds` inputs, including
+  `CCCD_detailed_avg2010_19.rds`, `CCCD_growth_final.rds`, `oth_char.rds`, and
+  `tot2.rds`. Until raw acquisition is added, these tracked `.rds` files are
+  the source of record.
 - [ ] Reconcile variable names before writing reusable loaders:
   `GDP_growth`/`GDPgrowth`, `tot`/`tot2`/`tot_growth`,
   `Country Code`/`Country_Code`/`Country_Name`/`Country`/`cname`, and

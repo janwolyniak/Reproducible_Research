@@ -231,9 +231,12 @@ package, estimator, and observed difference in `docs/reproduction_results.md`.
    observations after model-wise missing-value handling.
 5. The panel script contains likely copy-paste issues in diagnostics, including
    tests run on an undefined `model` until it is later assigned as `fixed`.
-6. Raw upstream World Bank, V-Dem, CCCD, and legal-origin source files are not
-   present in the repository. The reproduction therefore starts from tracked
-   `.rds` datasets unless later phases add raw-data acquisition.
+6. Full raw upstream downloads for World Bank, V-Dem, CCCD, legal origins,
+   continent groups, and colonization status are not present in the repository.
+   The repository does include processed upstream-derived `.rds` inputs such as
+   `CCCD_detailed_avg2010_19.rds`, `CCCD_growth_final.rds`, `oth_char.rds`, and
+   `tot2.rds`. The reproduction therefore starts from tracked `.rds` datasets
+   unless later phases add raw-data acquisition.
 7. The PDF is the source for the research question, variable definitions, and
    reported target tables. The R exported HTML files are the source for exact
    machine-readable table values where parsing is easier than PDF extraction.
