@@ -71,7 +71,15 @@ coverage.xml
 .ipynb_checkpoints/
 cover/
 
-#data
+# Local spreadsheet/raw exports
 *.xlsx
-*.csv
 *.err
+
+# Generated output scratch space. Final submitted outputs under
+# outputs/cross_section/ and outputs/panel/ should remain trackable.
+outputs/logs/*
+!outputs/logs/
+!outputs/logs/.gitkeep
+outputs/intermediate/*
+!outputs/intermediate/
+!outputs/intermediate/.gitkeep

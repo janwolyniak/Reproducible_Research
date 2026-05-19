@@ -7,9 +7,7 @@ import pandas as pd
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Convert RDS files into CSV files."
-    )
+    parser = argparse.ArgumentParser(description="Convert RDS files into CSV files.")
     parser.add_argument(
         "input_path",
         type=Path,
@@ -89,7 +87,9 @@ def main() -> None:
     files = iter_rds_files(input_path)
 
     if len(files) > 1 and output and output.suffix.lower() == ".csv":
-        raise SystemExit("A CSV file output path can only be used with a single input file.")
+        raise SystemExit(
+            "A CSV file output path can only be used with a single input file."
+        )
 
     for file_path in files:
         output_file = convert_file(file_path, output, args.encoding)

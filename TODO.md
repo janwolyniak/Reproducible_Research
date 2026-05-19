@@ -89,23 +89,48 @@ implementation phases.
 
 ## Phase 1: Repository Structure and Environment Baseline
 
-- [ ] Create a clean Python project layout, for example:
+- [x] Create a clean Python project layout, for example:
   - `src/repro_research/` for reusable Python modules.
   - `scripts/` for command-line entry points.
   - `outputs/` for regenerated tables, figures, and logs.
   - `docs/` for reproduction notes, AI disclosure, and final run instructions.
-- [ ] Add dependency management with pinned or constrained versions
+- [x] Add dependency management with pinned or constrained versions
   (`requirements.txt`, `pyproject.toml`, or both).
-- [ ] Keep the existing `helpers/rds_to_csv.py` workflow available for converting
+- [x] Keep the existing `helpers/rds_to_csv.py` workflow available for converting
   `.rds` files into reproducible CSV inputs.
-- [ ] Add a single command such as `python scripts/run_all.py` that rebuilds all
+- [x] Add a single command such as `python scripts/run_all.py` that rebuilds all
   Python outputs from the tracked inputs.
-- [ ] Add a lightweight validation command that checks that required input data
+- [x] Add a lightweight validation command that checks that required input data
   and expected output directories exist.
-- [ ] Update `.gitignore` so generated caches are ignored while final
+- [x] Update `.gitignore` so generated caches are ignored while final
   reproducibility artifacts remain trackable when appropriate.
 
 Owner: Jan.
+
+Implementation update, 2026-05-19:
+
+- Added `pyproject.toml` and `requirements.txt` with constrained Python
+  dependencies for data loading, statistics/econometrics, plotting, formatting,
+  linting, and tests.
+- Added the reusable package baseline in `src/repro_research/`, including
+  path contracts, project validation, output directory creation, and pipeline
+  orchestration.
+- Added `scripts/validate_project.py` and `scripts/run_all.py`. The current
+  Phase 1 `run_all` command validates all required tracked inputs/reference
+  artifacts, creates expected output directories, regenerates
+  `docs/phase0_audit.md`, and writes a local run log under `outputs/logs/`.
+- Added `outputs/` placeholders, `outputs/README.md`,
+  `docs/run_instructions.md`, and `docs/ai_disclosure.md`.
+- Kept `helpers/rds_to_csv.py` available and included it in the documented
+  run instructions.
+- Updated `.gitignore` so local logs/intermediate caches are ignored while
+  final cross-sectional and panel outputs remain trackable.
+- Verification passed:
+  `python3 scripts/validate_project.py`,
+  `python3 scripts/run_all.py`,
+  `python3 -m py_compile helpers/rds_to_csv.py scripts/audit_phase0.py scripts/validate_project.py scripts/run_all.py src/repro_research/__init__.py src/repro_research/paths.py src/repro_research/validation.py src/repro_research/pipeline.py`,
+  `python3 -m ruff check src scripts helpers`, and
+  `python3 -m black --check src scripts helpers`.
 
 ## Phase 2: Data Preparation in Python
 

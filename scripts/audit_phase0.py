@@ -10,14 +10,15 @@ Usage:
 
     python3 scripts/audit_phase0.py [--report PATH]
 """
+
 from __future__ import annotations
 
 import argparse
 import math
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable
 
 REPO = Path(__file__).resolve().parent.parent
 DATA_DIRS = [REPO / "cross-section" / "data", REPO / "panel" / "data_panel"]
@@ -311,7 +312,9 @@ def summarize_frame(frame, source: Path, object_name: str) -> FrameSummary:
     )
 
 
-def collect_inputs() -> tuple[list[FrameSummary], dict[str, object], list[tuple[str, str]]]:
+def collect_inputs() -> (
+    tuple[list[FrameSummary], dict[str, object], list[tuple[str, str]]]
+):
     _, pd, pyreadr = _load_dependencies()
     summaries: list[FrameSummary] = []
     frames: dict[str, object] = {}
@@ -338,7 +341,9 @@ def collect_inputs() -> tuple[list[FrameSummary], dict[str, object], list[tuple[
     return summaries, frames, errors
 
 
-def build_name_variant_table(summaries: list[FrameSummary]) -> dict[str, dict[str, list[str]]]:
+def build_name_variant_table(
+    summaries: list[FrameSummary],
+) -> dict[str, dict[str, list[str]]]:
     table: dict[str, dict[str, list[str]]] = {}
     for group_name, variants in NAME_VARIANT_GROUPS.items():
         table[group_name] = {variant: [] for variant in variants}
@@ -420,7 +425,10 @@ def source_to_variable_map(frames: dict[str, object]) -> list[dict[str, str]]:
         elif variable == "landlocked":
             sources = ["cross-section/data/geo_cepii.dta"]
         elif variable in {"continent", "ever_colonized"}:
-            sources = ["cross-section/data/geo_cepii.dta", "cross-section/data/oth_char.rds"]
+            sources = [
+                "cross-section/data/geo_cepii.dta",
+                "cross-section/data/oth_char.rds",
+            ]
         elif variable == "legal_old_o":
             sources = ["cross-section/data/oth_char.rds"]
         elif variable == "tot2":
@@ -578,8 +586,12 @@ def model_missingness(frames: dict[str, object]) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
 
     for model_name, variables in MODEL_SPECS.items():
-        available_vars = [variable for variable in variables if variable in frame.columns]
-        missing_vars = [variable for variable in variables if variable not in frame.columns]
+        available_vars = [
+            variable for variable in variables if variable in frame.columns
+        ]
+        missing_vars = [
+            variable for variable in variables if variable not in frame.columns
+        ]
         data = frame[available_vars].copy()
         if "GDPpc2015" in data:
             data.loc[data["GDPpc2015"] <= 0, "GDPpc2015"] = float("nan")
@@ -608,7 +620,10 @@ def model_missingness(frames: dict[str, object]) -> list[dict[str, object]]:
 
 def attrition_summary(frames: dict[str, object]) -> list[tuple[str, int | str, str]]:
     ordered = [
-        ("World Bank-style variable extracts", "cross-section/data/gdp_growth_Data.rds"),
+        (
+            "World Bank-style variable extracts",
+            "cross-section/data/gdp_growth_Data.rds",
+        ),
         ("CCCD average compliance extract", "cross-section/data/CCCD_avg2010_19.rds"),
         ("V-Dem democracy extract", "cross-section/data/Democracy_avg2010_19.rds"),
         ("CEPII geography extract", "cross-section/data/geo_cepii.dta"),
@@ -659,7 +674,9 @@ def render_report(
 
     lines.append("## 1. Data inventory")
     lines.append("")
-    lines.append("| File | Object | Rows | Cols | Country col | Year col | Countries | Years |")
+    lines.append(
+        "| File | Object | Rows | Cols | Country col | Year col | Countries | Years |"
+    )
     lines.append("| --- | --- | ---: | ---: | --- | --- | ---: | --- |")
     for summary in summaries:
         country_col = summary.country_name_col or summary.country_code_col or "-"
@@ -670,7 +687,9 @@ def render_report(
             else "-"
         )
         countries = (
-            summary.n_unique_countries if summary.n_unique_countries is not None else "-"
+            summary.n_unique_countries
+            if summary.n_unique_countries is not None
+            else "-"
         )
         lines.append(
             f"| `{summary.relpath}` | `{summary.object_name}` | {summary.n_rows} | "
@@ -698,7 +717,9 @@ def render_report(
         "widest tracked final cross-sectional model dataset."
     )
     lines.append("")
-    lines.append("| Source file | Rows | Codes | Matched target codes | Target codes absent | Extra source codes |")
+    lines.append(
+        "| Source file | Rows | Codes | Matched target codes | Target codes absent | Extra source codes |"
+    )
     lines.append("| --- | ---: | ---: | ---: | --- | ---: |")
     for row in source_rows:
         missing = row["target_missing"]
@@ -766,7 +787,9 @@ def render_report(
             f"matches dropped countries: {outlier['rule_matches_dropped']}."
         )
         lines.append("")
-        lines.append("| Country | Code | Leverage | Std. residual | Cook's D | Rule flag | Dropped |")
+        lines.append(
+            "| Country | Code | Leverage | Std. residual | Cook's D | Rule flag | Dropped |"
+        )
         lines.append("| --- | --- | ---: | ---: | ---: | :---: | :---: |")
         diag = outlier["dropped_diagnostics"]
         for _, row in diag.sort_values("Country_Name").iterrows():
@@ -778,7 +801,9 @@ def render_report(
             )
     elif "regression_error" in outlier:
         lines.append("")
-        lines.append(f"Regression diagnostic recomputation failed: {outlier['regression_error']}")
+        lines.append(
+            f"Regression diagnostic recomputation failed: {outlier['regression_error']}"
+        )
     lines.append("")
 
     lines.append("## 7. Model-wise missingness")
@@ -789,7 +814,9 @@ def render_report(
         "121-122 observation OLS tables."
     )
     lines.append("")
-    lines.append("| Model | Base rows | Complete rows | Dropped rows | Missing required vars | Variable-level missingness |")
+    lines.append(
+        "| Model | Base rows | Complete rows | Dropped rows | Missing required vars | Variable-level missingness |"
+    )
     lines.append("| --- | ---: | ---: | ---: | --- | --- |")
     for row in missingness_rows:
         lines.append(
