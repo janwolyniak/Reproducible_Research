@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import tempfile
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
@@ -105,11 +107,8 @@ def find_first_column(columns: Iterable[str], candidates: Iterable[str]) -> str:
 def read_rds_objects(path: Path) -> dict[str, pd.DataFrame]:
     try:
         import pyreadr
-    except ImportError as exc:
-        raise RuntimeError(
-            "pyreadr is required to read .rds files. Install project "
-            "dependencies with `python -m pip install -r requirements.txt`."
-        ) from exc
+    except ImportError:
+        return {path.stem: read_rds_with_rscript(path)}
 
     result = pyreadr.read_r(str(path))
     frames = {
@@ -120,6 +119,31 @@ def read_rds_objects(path: Path) -> dict[str, pd.DataFrame]:
     if not frames:
         raise ValueError(f"No pandas-compatible data frames found in {path}.")
     return frames
+
+
+def read_rds_with_rscript(path: Path) -> pd.DataFrame:
+    script = """
+args <- commandArgs(trailingOnly = TRUE)
+input <- args[[1]]
+output <- args[[2]]
+obj <- readRDS(input)
+if (!is.data.frame(obj)) {
+  stop("RDS object is not a data.frame")
+}
+write.csv(obj, output, row.names = FALSE, na = "")
+"""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        csv_path = Path(tmpdir) / f"{path.stem}.csv"
+        completed = subprocess.run(
+            ["Rscript", "--vanilla", "-e", script, str(path), str(csv_path)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if completed.returncode != 0:
+            message = completed.stderr.strip() or completed.stdout.strip()
+            raise RuntimeError(f"Rscript could not read {path}: {message}")
+        return pd.read_csv(csv_path)
 
 
 def read_rds_dataframe(path: Path, object_name: str | None = None) -> pd.DataFrame:

@@ -15,6 +15,9 @@ from pathlib import Path
 
 import pandas as pd
 
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "src"))
+
 from repro_research.panel_data import PANEL_SPECS, load_panel
 from repro_research.panel_transforms import prepare_for_models
 from repro_research.paths import PROJECT_ROOT

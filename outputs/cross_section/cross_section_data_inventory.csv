@@ -1,0 +1,29 @@
+dataset,path,rows,columns,country_name_column,country_code_column,unique_countries,source_type
+model_data,cross-section/data/model_data.rds,162,36,Country Name,Country Code,162,derived_model
+model_data2,cross-section/data/model_data2.rds,158,44,Country Name,Country_Code,158,derived_model
+model_data3,cross-section/data/model_data3.rds,162,112,Country_Name,Country_Code,162,derived_model
+model_data4,cross-section/data/model_data4.rds,162,42,Country_Name,Country_Code,162,derived_model
+model_data4_o,cross-section/data/model_data4_o.rds,157,43,Country_Name,Country_Code,157,derived_model
+CCCD_avg2010_19,cross-section/data/CCCD_avg2010_19.rds,169,15,cname,iso3c,169,source_extract
+CCCD_detailed_avg2010_19,cross-section/data/CCCD_detailed_avg2010_19.rds,178,77,,Country Code,176,source_extract
+CCCD_growth_final,cross-section/data/CCCD_growth_final.rds,169,5,,Country Code,169,source_extract
+Democracy_avg2010_19,cross-section/data/Democracy_avg2010_19.rds,179,7,country_name,country_text_id,179,source_extract
+GDPpc_current_initial_Data,cross-section/data/GDPpc_current_initial_Data.rds,265,3,Country Name,Country Code,265,source_extract
+GDPpc_initial_in_2015usd_Data,cross-section/data/GDPpc_initial_in_2015usd_Data.rds,265,3,Country Name,Country Code,265,source_extract
+cc_growth_yty,cross-section/data/cc_growth_yty.rds,167,5,,Country Code,166,source_extract
+edu_initial_Data,cross-section/data/edu_initial_Data.rds,265,3,Country Name,Country Code,265,source_extract
+fertility_Data,cross-section/data/fertility_Data.rds,265,3,Country Name,Country Code,265,source_extract
+gdp_growth_Data,cross-section/data/gdp_growth_Data.rds,265,3,Country Name,Country Code,265,source_extract
+geo_cepii,cross-section/data/geo_cepii.dta,238,34,country,iso3,225,source_extract
+gov_exp_Data,cross-section/data/gov_exp_Data.rds,265,3,Country Name,Country Code,265,source_extract
+gov_exp_edu_Data,cross-section/data/gov_exp_edu_Data.rds,265,3,Country Name,Country Code,265,source_extract
+gov_milit_exp_Data,cross-section/data/gov_milit_exp_Data.rds,265,3,Country Name,Country Code,265,source_extract
+inflation_cpi_Data,cross-section/data/inflation_cpi_Data.rds,265,3,Country Name,Country Code,265,source_extract
+inflation_gdpdeflator_Data,cross-section/data/inflation_gdpdeflator_Data.rds,265,3,Country Name,Country Code,265,source_extract
+investment_Data,cross-section/data/investment_Data.rds,265,3,Country Name,Country Code,265,source_extract
+life_exp_initial_Data,cross-section/data/life_exp_initial_Data.rds,265,3,Country Name,Country Code,265,source_extract
+model_data4.1,cross-section/data/model_data4.1.rds,157,46,Country_Name,Country_Code,157,source_extract
+oth_char,cross-section/data/oth_char.rds,220,4,,Country_Code,220,source_extract
+tot2,cross-section/data/tot2.rds,271,2,,Country Code,266,source_extract
+tot_Data,cross-section/data/tot_Data.rds,265,3,Country Name,Country Code,265,source_extract
+trade_Data,cross-section/data/trade_Data.rds,265,3,Country Name,Country Code,265,source_extract

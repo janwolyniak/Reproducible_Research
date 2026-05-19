@@ -15,7 +15,9 @@ from __future__ import annotations
 
 import argparse
 import math
+import subprocess
 import sys
+import tempfile
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -220,12 +222,15 @@ def _load_dependencies():
     try:
         import numpy as np
         import pandas as pd
-        import pyreadr
     except ImportError as exc:
         raise SystemExit(
-            "Phase 0 audit requires pandas, numpy, and pyreadr to read tracked "
+            "Phase 0 audit requires pandas and numpy to read tracked "
             "inputs. Install the project dependencies or run in the prepared env."
         ) from exc
+    try:
+        import pyreadr
+    except ImportError:
+        pyreadr = None
     return np, pd, pyreadr
 
 
@@ -245,9 +250,36 @@ def _normalize_code(value: object) -> str:
     return str(value).strip().upper()
 
 
+def _read_rds_with_rscript(path: Path, pd) -> object:
+    script = """
+args <- commandArgs(trailingOnly = TRUE)
+input <- args[[1]]
+output <- args[[2]]
+obj <- readRDS(input)
+if (!is.data.frame(obj)) {
+  stop("RDS object is not a data.frame")
+}
+write.csv(obj, output, row.names = FALSE, na = "")
+"""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        csv_path = Path(tmpdir) / f"{path.stem}.csv"
+        completed = subprocess.run(
+            ["Rscript", "--vanilla", "-e", script, str(path), str(csv_path)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if completed.returncode != 0:
+            message = completed.stderr.strip() or completed.stdout.strip()
+            raise RuntimeError(f"Rscript could not read {path}: {message}")
+        return pd.read_csv(csv_path)
+
+
 def _load_data_file(path: Path, pd, pyreadr) -> dict[str, object]:
     if path.suffix.lower() == ".dta":
         return {path.stem: pd.read_stata(path)}
+    if pyreadr is None:
+        return {path.stem: _read_rds_with_rscript(path, pd)}
     result = pyreadr.read_r(str(path))
     return {
         name if name is not None else path.stem: frame

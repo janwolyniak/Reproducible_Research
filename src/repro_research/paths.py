@@ -21,6 +21,7 @@ CORE_INPUT_FILES = (
     "docs/data_dictionary.md",
     "scripts/audit_phase0.py",
     "scripts/inventory_data.py",
+    "scripts/run_cross_section_data.py",
     "helpers/rds_to_csv.py",
     "cross-section/inorder.R",
     "panel/inorder_panel.R",

@@ -9,11 +9,12 @@ Three tracked ``.rds`` inputs cover the panel reproduction:
   the cross-section variable set (1617 x 22).
 
 Each loader applies the same minimal normalisation: read the ``.rds`` via
-``pyreadr``, cast ``Year`` to integer, coerce ``fertility`` to ``float`` (the R
-script does this manually for ``small_plm``), strip ``Country`` whitespace, add
-the canonical ``country`` column via :mod:`repro_research.country_naming`, and
-assert ``(country, Year)`` uniqueness. The panel ``MultiIndex`` is not set here
--- Phase 4 model fitting does that explicitly when it needs it.
+the shared data reader, cast ``Year`` to integer, coerce ``fertility`` to
+``float`` (the R script does this manually for ``small_plm``), strip ``Country``
+whitespace, add the canonical ``country`` column via
+:mod:`repro_research.country_naming`, and assert ``(country, Year)`` uniqueness.
+The panel ``MultiIndex`` is not set here -- Phase 4 model fitting does that
+explicitly when it needs it.
 """
 
 from __future__ import annotations
@@ -22,9 +23,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
-import pyreadr
 
 from repro_research.country_naming import to_canonical
+from repro_research.data_io import read_rds_dataframe
 from repro_research.paths import PROJECT_ROOT
 
 _MAIN_REQUIRED = (
@@ -106,15 +107,7 @@ PANEL_SPECS: dict[str, PanelSpec] = {
 
 
 def _read_single_frame(path: Path) -> pd.DataFrame:
-    result = pyreadr.read_r(str(path))
-    frames = [v for v in result.values() if isinstance(v, pd.DataFrame)]
-    if not frames:
-        raise ValueError(f"No DataFrame found in {path}")
-    if len(frames) > 1:
-        raise ValueError(
-            f"Expected exactly one DataFrame in {path}, found {len(frames)}"
-        )
-    return frames[0]
+    return read_rds_dataframe(path)
 
 
 def _normalise(df: pd.DataFrame, spec: PanelSpec) -> pd.DataFrame:
