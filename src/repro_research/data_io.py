@@ -104,6 +104,19 @@ def find_first_column(columns: Iterable[str], candidates: Iterable[str]) -> str:
     return next((candidate for candidate in candidates if candidate in column_set), "")
 
 
+def stable_dtype_label(series: pd.Series) -> str:
+    """Return a reader-stable dtype label for generated inventories."""
+    if isinstance(series.dtype, pd.CategoricalDtype) or pd.api.types.is_object_dtype(
+        series
+    ):
+        return "str"
+    if str(series.dtype) == "float64" and not series.hasnans:
+        values = series.dropna()
+        if not values.empty and bool(((values % 1).abs() < 1e-12).all()):
+            return "int64"
+    return str(series.dtype)
+
+
 def read_rds_objects(path: Path) -> dict[str, pd.DataFrame]:
     try:
         import pyreadr
@@ -210,7 +223,10 @@ def summarize_dataset(spec: DatasetSpec) -> list[DatasetInventoryRow]:
                 missing_cells=int(frame.isna().sum().sum()),
                 column_names_json=json.dumps(columns, ensure_ascii=True),
                 dtypes_json=json.dumps(
-                    {str(column): str(dtype) for column, dtype in frame.dtypes.items()},
+                    {
+                        str(column): stable_dtype_label(frame[column])
+                        for column in frame.columns
+                    },
                     ensure_ascii=True,
                     sort_keys=True,
                 ),

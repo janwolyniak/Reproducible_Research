@@ -217,25 +217,43 @@ Kinga implementation update, 2026-05-19:
 
 ## Phase 3: Cross-Sectional Reproduction
 
-- [ ] Reproduce descriptive statistics from
+- [x] Reproduce descriptive statistics from
   `cross-section/tables_and_other/descriptive stat.html`.
-- [ ] Reproduce Spearman correlation matrices and correlation plots from the
+- [x] Reproduce Spearman correlation matrices and correlation plots from the
   cross-sectional workflow.
-- [ ] Recreate the main OLS specifications from `cross-section/inorder.R`,
+- [x] Recreate the main OLS specifications from `cross-section/inorder.R`,
   including the preferred models around GDP growth, constitutional compliance,
   trade, terms of trade, investment, government expenditure, and GDP per capita.
-- [ ] Implement robust standard errors where used in the R workflow.
-- [ ] Reproduce diagnostic checks: RESET, variance inflation factors, residual
+- [x] Implement robust standard errors where used in the R workflow.
+- [x] Reproduce diagnostic checks: RESET, variance inflation factors, residual
   normality checks, heteroskedasticity tests, Durbin-Watson/autocorrelation
   checks, leverage, standardized residuals, and Cook's distance.
-- [ ] Recreate the outlier-filtered robustness regressions.
-- [ ] Recreate alternative institutional-variable regressions where they are
+- [x] Recreate the outlier-filtered robustness regressions.
+- [x] Recreate alternative institutional-variable regressions where they are
   part of the paper's argument.
-- [ ] Export publication-ready tables and figures to `outputs/cross_section/`.
-- [ ] Write `docs/cross_section_reproduction.md` explaining what matches the R
+- [x] Export publication-ready tables and figures to `outputs/cross_section/`.
+- [x] Write `docs/cross_section_reproduction.md` explaining what matches the R
   outputs and where Python results differ.
 
 Owner: Kinga. Reviewer: Jan.
+
+Kinga implementation update, 2026-05-19:
+
+- Added `src/repro_research/cross_section.py` and
+  `scripts/run_cross_section.py`.
+- Reproduced cross-sectional descriptive statistics, Spearman correlation
+  matrix, grouped Spearman tests for `cc_total` and `cc_prop`, and a
+  best-effort correlation plot under `outputs/cross_section/`.
+- Recreated the main OLS model family from `cross-section/inorder.R`, including
+  full-sample models, outlier-filtered robustness models, `cc_total_lv` and
+  `cc_prop` compliance variants, and institutional alternatives for World Bank
+  governance variables.
+- Exported HC3 robust-standard-error coefficient tables, diagnostics, VIFs,
+  influence diagnostics, and residual/Cook's-distance plots.
+- Wrote `docs/cross_section_reproduction.md` with matching notes and the
+  documented `model_data4` `tot2`/`terms_trade` fallback.
+- Wired Phase 3 into `python scripts/run_all.py` and added a smoke test for the
+  preferred outlier-filtered model sample.
 
 ## Phase 4: Panel Reproduction
 

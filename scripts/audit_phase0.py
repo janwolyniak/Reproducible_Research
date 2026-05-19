@@ -250,6 +250,17 @@ def _normalize_code(value: object) -> str:
     return str(value).strip().upper()
 
 
+def _stable_dtype_label(series) -> str:
+    dtype = series.dtype
+    if str(dtype) == "category" or str(dtype) == "object":
+        return "str"
+    if str(dtype) == "float64" and not series.hasnans:
+        values = series.dropna()
+        if not values.empty and bool(((values % 1).abs() < 0.000000000001).all()):
+            return "int64"
+    return str(dtype)
+
+
 def _read_rds_with_rscript(path: Path, pd) -> object:
     script = """
 args <- commandArgs(trailingOnly = TRUE)
@@ -323,7 +334,9 @@ def summarize_frame(frame, source: Path, object_name: str) -> FrameSummary:
     for column in frame.columns:
         n_missing = int(missing[column])
         pct_missing = round(n_missing / n_rows * 100, 1) if n_rows else 0.0
-        columns.append((str(column), str(frame[column].dtype), n_missing, pct_missing))
+        columns.append(
+            (str(column), _stable_dtype_label(frame[column]), n_missing, pct_missing)
+        )
 
     return FrameSummary(
         relpath=str(source.relative_to(REPO)).replace("\\", "/"),

@@ -11,7 +11,6 @@ import pandas as pd
 
 from repro_research.paths import CROSS_SECTION_DATA_FILES, PROJECT_ROOT
 
-
 COUNTRY_NAME_COLUMNS = (
     "Country_Name",
     "Country Name",
@@ -193,7 +192,11 @@ def _column_role(column: str) -> str:
         return "year"
     if column in {"continent", "legal_old_o", "ever_colonized", "landlocked"}:
         return "categorical_or_grouping"
-    if column.startswith("cc_") or column.startswith("dj_") or column.startswith("gap_"):
+    if (
+        column.startswith("cc_")
+        or column.startswith("dj_")
+        or column.startswith("gap_")
+    ):
         return "constitutional_compliance"
     if column.startswith("v2x_") or column in {
         "rule_of_law",
@@ -233,7 +236,9 @@ def build_inventory(frames: dict[str, CrossSectionFrame]) -> pd.DataFrame:
         country_name = _first_present(frame.columns, COUNTRY_NAME_COLUMNS)
         country_code = _first_present(frame.columns, COUNTRY_CODE_COLUMNS)
         country_col = country_name or country_code
-        countries = int(frame[country_col].nunique(dropna=True)) if country_col else np.nan
+        countries = (
+            int(frame[country_col].nunique(dropna=True)) if country_col else np.nan
+        )
         rows.append(
             {
                 "dataset": item.name,
@@ -243,7 +248,9 @@ def build_inventory(frames: dict[str, CrossSectionFrame]) -> pd.DataFrame:
                 "country_name_column": country_name,
                 "country_code_column": country_code,
                 "unique_countries": countries,
-                "source_type": "derived_model" if item.name in MODEL_DATASETS else "source_extract",
+                "source_type": (
+                    "derived_model" if item.name in MODEL_DATASETS else "source_extract"
+                ),
             }
         )
     return pd.DataFrame(rows).sort_values(["source_type", "dataset"])
@@ -263,11 +270,14 @@ def normalize_country_fields(frame: pd.DataFrame) -> pd.DataFrame:
 def coerce_cross_section_types(frame: pd.DataFrame) -> pd.DataFrame:
     out = frame.copy()
     for column in out.columns:
-        if column in {"country_name", "country_code", *COUNTRY_NAME_COLUMNS, *COUNTRY_CODE_COLUMNS}:
+        if column in {
+            "country_name",
+            "country_code",
+            *COUNTRY_NAME_COLUMNS,
+            *COUNTRY_CODE_COLUMNS,
+        }:
             out[column] = out[column].astype("string")
-        elif column in {"continent", "legal_old_o"}:
-            out[column] = out[column].astype("category")
-        elif column == "landlocked":
+        elif column in {"continent", "legal_old_o"} or column == "landlocked":
             out[column] = out[column].astype("category")
         else:
             converted = pd.to_numeric(out[column], errors="coerce")

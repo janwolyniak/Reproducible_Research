@@ -18,9 +18,9 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from repro_research.panel_data import PANEL_SPECS, load_panel
-from repro_research.panel_transforms import prepare_for_models
-from repro_research.paths import PROJECT_ROOT
+from repro_research.panel_data import PANEL_SPECS, load_panel  # noqa: E402
+from repro_research.panel_transforms import prepare_for_models  # noqa: E402
+from repro_research.paths import PROJECT_ROOT  # noqa: E402
 
 _DEFAULT_OUT = PROJECT_ROOT / "outputs" / "intermediate" / "panel"
 
