@@ -293,17 +293,40 @@ Owner: Iwo. Reviewer: Jan.
 
 - [ ] Create a master results index in `outputs/README.md`.
 - [ ] Compare regenerated Python outputs against the existing R-generated HTML
-  tables and plots.
+  tables and plots. Panel side: side-by-side comparison in
+  `docs/panel_reproduction_results.md` covering descriptive stats, FE main,
+  alt-FE compliance components, specification tests, and diagnostic tests.
+  Cross-section side pending.
 - [ ] Add a table-by-table and figure-by-figure reproduction checklist in
-  `docs/reproduction_results.md`.
+  `docs/reproduction_results.md`. Master file to be stitched by Jan from the
+  panel and cross-section sub-documents. Panel checklist already in
+  `docs/panel_reproduction_results.md`.
 - [ ] Explain any non-matching results with concrete causes, such as different
   default covariance estimators, missing-value handling, lag construction, or
-  package-level implementation differences.
+  package-level implementation differences. Panel-side causes documented:
+  Driscoll-Kraay finite-sample correction differences between
+  `linearmodels`/local SCC and R `sandwich::vcovSCC`, and the
+  `plm::pbgtest` vs Breusch-Godfrey panel proxy substitution for the 2010-2019
+  serial-correlation cell.
 - [ ] Include short interpretation notes so the reviewer can see how the Python
-  results relate to the paper's economic argument.
+  results relate to the paper's economic argument. Panel interpretation notes
+  added to `docs/panel_reproduction_results.md` (effect size, cross-section vs
+  panel reconciliation, component decomposition, SE robustness, CD evidence).
 - [ ] Ensure all final tables and figures can be regenerated from a clean clone.
 
 Owners: Jan for integration; Kinga for cross-section notes; Iwo for panel notes.
+
+Iwo implementation update, 2026-05-19:
+
+- Added `docs/panel_reproduction_results.md` with the panel side of the
+  Phase 5 paper-level comparison: per-artifact match status, side-by-side
+  coefficient and standard-error tables for the main FE and alt-FE blocks
+  against `panel/panel_tables/model_output.html` and `model_output2.html`,
+  specification and diagnostic test comparisons against the R reference,
+  and interpretation notes tying the Phase 4 numbers to the paper's
+  economic argument.
+- Cross-section sub-doc and the master `docs/reproduction_results.md`
+  index remain open and belong to Kinga and Jan respectively.
 
 ## Phase 6: Docker and Full Reproducibility
 
