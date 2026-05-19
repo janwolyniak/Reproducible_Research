@@ -28,21 +28,44 @@ main implementer.
 
 ## Phase 0: Source Audit and Reproduction Contract
 
-- [ ] Read `2400-LIC-FII.pdf` and write a concise reproduction summary in
+- [x] Read `2400-LIC-FII.pdf` and write a concise reproduction summary in
   `docs/reproduction_contract.md`.
-- [ ] Identify the paper's research question, dependent variables, key
+- [x] Identify the paper's research question, dependent variables, key
   explanatory variables, controls, model families, and expected tables/figures.
-- [ ] Map every relevant R artifact to the Python artifact that will replace it:
+- [x] Map every relevant R artifact to the Python artifact that will replace it:
   `cross-section/inorder.R`, `panel/inorder_panel.R`, existing `.rds` data, HTML
   tables, plots, and diagnostics.
-- [ ] Decide which outputs are exact-reproduction targets and which are
+- [x] Decide which outputs are exact-reproduction targets and which are
   best-effort approximations due to library differences between R and Python.
-- [ ] Record all known limitations and acceptable numerical tolerances before
+- [x] Record all known limitations and acceptable numerical tolerances before
   writing the Python models.
-- [ ] Create an initial issue/section in this TODO for any missing data,
+- [x] Create an initial issue/section in this TODO for any missing data,
   ambiguous variables, or undocumented transformations found during the audit.
 
 Owner: Jan, with review by Kinga and Iwo.
+
+## Phase 0 Audit Issues and Decisions
+
+The detailed audit contract is in `docs/reproduction_contract.md`. The following
+items must stay visible during implementation phases.
+
+- [ ] Raw upstream data files are not present for World Bank, V-Dem, CCCD, legal
+  origins, continent groups, or colonization status. Until raw acquisition is
+  added, the tracked `.rds` files are the source of record.
+- [ ] Reconcile variable names before writing reusable loaders:
+  `GDP_growth`/`GDPgrowth`, `tot`/`tot2`/`tot_growth`,
+  `Country Code`/`Country_Code`/`Country_Name`/`Country`/`cname`, and
+  `gov_exp_milit`/`gov_exp_mil`.
+- [ ] Treat `cross-section/inorder.R` and `panel/inorder_panel.R` as workflow
+  evidence, not executable scripts. They contain bare section labels,
+  exploratory fragments, and unresolved object references.
+- [ ] Confirm the cross-sectional outlier rule in code. The paper says five
+  outliers were removed and the cleaned dataset has 157 countries, while the
+  main OLS tables use 121-122 observations after model-wise missingness.
+- [ ] Implement panel diagnostic and robust-covariance checks carefully because
+  R `plm` and Python libraries may use different finite-sample corrections.
+- [ ] Keep HTML/CSS styling and exact plot pixels as best-effort targets; compare
+  numerical table values and plot source data instead.
 
 ## Phase 1: Repository Structure and Environment Baseline
 
