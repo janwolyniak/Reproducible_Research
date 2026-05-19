@@ -30,5 +30,11 @@ python scripts/run_all.py
 ```
 
 At the Phase 1 baseline, `run_all.py` validates the repository, regenerates the
-Phase 0 audit, and writes a local run log. Detailed commands are in
-`docs/run_instructions.md`.
+Phase 0 audit, regenerates the Phase 2 shared data inventory, and writes a
+local run log. Detailed commands are in `docs/run_instructions.md`.
+
+Regenerate only the data inventory and shared data dictionary:
+
+```bash
+python scripts/inventory_data.py
+```

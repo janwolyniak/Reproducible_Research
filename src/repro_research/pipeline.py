@@ -70,6 +70,7 @@ def run_all() -> int:
 
     steps = [
         _run_python_script(PROJECT_ROOT / "scripts" / "audit_phase0.py"),
+        _run_python_script(PROJECT_ROOT / "scripts" / "inventory_data.py"),
         _run_python_script(PROJECT_ROOT / "scripts" / "run_panel_prep.py"),
     ]
     log_path = write_run_summary(steps)
