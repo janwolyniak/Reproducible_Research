@@ -191,6 +191,21 @@ def _design(
     return model_data, y, x
 
 
+def _drop_degenerate_first_difference_terms(x: pd.DataFrame) -> pd.DataFrame:
+    """Drop regressors whose first differences contain no usable variation."""
+    diffs = x.groupby(level="country").diff()
+    keep = []
+    for column in x.columns:
+        values = diffs[column].replace([np.inf, -np.inf], np.nan).dropna()
+        if values.empty:
+            continue
+        if float(values.abs().max()) > 1e-12:
+            keep.append(column)
+    if not keep:
+        raise ValueError("First-difference design has no non-degenerate regressors.")
+    return x[keep]
+
+
 # ---------------------------------------------------------------------------
 # Descriptive statistics and correlation
 # ---------------------------------------------------------------------------
@@ -260,8 +275,10 @@ def fit_panel_model(spec: PanelSpec, df: pd.DataFrame) -> PanelFitResult:
     elif spec.model_kind == "between":
         raw = BetweenOLS(y, exog).fit()
     elif spec.model_kind == "first_difference":
-        # First-difference drops the constant by construction.
-        raw = FirstDifferenceOLS(y, x).fit()
+        # First-difference drops the constant by construction. Variables that do
+        # not move within country become all-zero after differencing and must be
+        # removed before fitting so inference columns remain meaningful.
+        raw = FirstDifferenceOLS(y, _drop_degenerate_first_difference_terms(x)).fit()
     elif spec.model_kind == "fixed":
         raw = PanelOLS(y, exog, entity_effects=True, drop_absorbed=True).fit()
     elif spec.model_kind == "random":
@@ -453,34 +470,45 @@ def specification_tests(
 # ---------------------------------------------------------------------------
 
 
-def wooldridge_serial_correlation(fit: PanelFitResult) -> float | None:
+def panel_serial_correlation_test(fit: PanelFitResult) -> float | None:
+    """Breusch-Godfrey-style panel serial-correlation proxy.
+
+    R's ``plm::pbgtest`` is not exposed in Python. This uses the same diagnostic
+    target: an auxiliary regression of residuals on their first within-country
+    lag plus the fitted design matrix, with an LM statistic based on R-squared.
+    """
     resid = fit.residuals.dropna()
     if resid.empty:
         return None
-    diff = resid.groupby(level="country").diff().dropna()
-    lagged = diff.groupby(level="country").shift(1)
-    paired = pd.concat({"d": diff, "lag_d": lagged}, axis=1).dropna()
-    if len(paired) < 5:
+    lagged = resid.groupby(level="country").shift(1)
+    exog = fit.raw.model.exog.dataframe.reindex(resid.index)
+    aux = pd.concat({"resid": resid, "lag_resid": lagged}, axis=1).join(exog)
+    aux = aux.replace([np.inf, -np.inf], np.nan).dropna()
+    if len(aux) < 5:
         return None
-    x = sm.add_constant(paired["lag_d"].to_numpy())
-    model = sm.OLS(paired["d"].to_numpy(), x).fit(
-        cov_type="cluster",
-        cov_kwds={"groups": paired.index.get_level_values("country")},
-    )
-    coef = model.params[1]
-    se = model.bse[1]
-    expected_coef = -0.5
-    statistic = (coef - expected_coef) / se
-    return float(2 * (1 - stats.norm.cdf(abs(statistic))))
+    y = aux["resid"].to_numpy()
+    x = sm.add_constant(aux.drop(columns="resid").to_numpy(), has_constant="add")
+    model = sm.OLS(y, x).fit()
+    statistic = len(aux) * model.rsquared
+    return float(stats.chi2.sf(statistic, df=1))
+
+
+def wooldridge_serial_correlation(fit: PanelFitResult) -> float | None:
+    """Backward-compatible alias for the Phase 4 serial-correlation diagnostic."""
+    return panel_serial_correlation_test(fit)
 
 
 def breusch_pagan_test(fit: PanelFitResult) -> float | None:
     resid = fit.residuals.dropna()
-    fitted = fit.fitted.reindex(resid.index)
-    if resid.empty or fitted.empty:
+    exog = fit.raw.model.exog.dataframe.reindex(resid.index)
+    aux = exog.replace([np.inf, -np.inf], np.nan).dropna()
+    common = resid.index.intersection(aux.index)
+    if resid.empty or aux.empty or len(common) < 5:
         return None
-    exog = sm.add_constant(fitted.to_numpy())
-    lm, lm_pvalue, _, _ = het_breuschpagan(resid.to_numpy(), exog)
+    lm, lm_pvalue, _, _ = het_breuschpagan(
+        resid.loc[common].to_numpy(),
+        sm.add_constant(aux.loc[common].to_numpy(), has_constant="add"),
+    )
     return float(lm_pvalue)
 
 
@@ -512,8 +540,11 @@ def diagnostic_tests(
         rows.append(
             {
                 "block": label,
-                "wooldridge_pvalue": wooldridge_serial_correlation(fit),
+                "serial_correlation_test": "Breusch-Godfrey panel proxy",
+                "serial_correlation_pvalue": panel_serial_correlation_test(fit),
+                "heteroskedasticity_test": "Breusch-Pagan on model design",
                 "breusch_pagan_pvalue": breusch_pagan_test(fit),
+                "cross_sectional_dependence_test": "Pesaran CD",
                 "pesaran_cd_pvalue": pesaran_cd_test(fit),
             }
         )
@@ -563,6 +594,7 @@ def panel_robust_se_table(fit: PanelFitResult) -> pd.DataFrame:
     double_cluster = raw.model.fit(
         cov_type="clustered", cluster_entity=True, cluster_time=True
     )
+    time_cluster = raw.model.fit(cov_type="clustered", cluster_time=True)
     classical = raw
     for term in fit.params.index:
         rows.append(
@@ -571,6 +603,7 @@ def panel_robust_se_table(fit: PanelFitResult) -> pd.DataFrame:
                 "coefficient": float(fit.params[term]),
                 "se_classical": float(classical.std_errors[term]),
                 "se_arellano": float(arellano.std_errors[term]),
+                "se_time_cluster": float(time_cluster.std_errors[term]),
                 "se_double_cluster": float(double_cluster.std_errors[term]),
                 "se_driscoll_kraay": float(dk_se.get(term, np.nan)),
             }
@@ -638,10 +671,74 @@ def _write_table(
     return csv_path, html_path
 
 
-def write_panel_documentation(paths: tuple[Path, ...]) -> Path:
+def _format_pvalue(value: object) -> str:
+    if value is None or pd.isna(value):
+        return "NA"
+    return f"{float(value):.4g}"
+
+
+def _markdown_table(frame: pd.DataFrame, columns: tuple[str, ...]) -> list[str]:
+    rows = [
+        "| " + " | ".join(columns) + " |",
+        "| " + " | ".join("---" for _ in columns) + " |",
+    ]
+    for _, row in frame.iterrows():
+        values = []
+        for column in columns:
+            value = row[column]
+            values.append(
+                _format_pvalue(value) if isinstance(value, float) else str(value)
+            )
+        rows.append("| " + " | ".join(values) + " |")
+    return rows
+
+
+def _first_difference_omissions(summary: pd.DataFrame) -> list[str]:
+    lines = []
+    for spec in MODEL_SPECS:
+        if spec.model_kind != "first_difference":
+            continue
+        terms = set(summary.loc[summary["model"] == spec.name, "term"])
+        omitted = sorted(set(spec.predictors) - terms)
+        if omitted:
+            lines.append(
+                f"- `{spec.name}` drops {', '.join(f'`{term}`' for term in omitted)} "
+                "because the first-differenced regressor has no within-country "
+                "variation in the complete model sample."
+            )
+    return lines
+
+
+def write_panel_documentation(
+    paths: tuple[Path, ...],
+    summary: pd.DataFrame,
+    spec_tests: pd.DataFrame,
+    diag_tests: pd.DataFrame,
+    robust_se: pd.DataFrame,
+) -> Path:
     path = DOCS_DIR / "panel_reproduction.md"
     artifact_lines = "\n".join(
         f"- `{artifact.relative_to(PROJECT_ROOT).as_posix()}`" for artifact in paths
+    )
+    fd_omissions = _first_difference_omissions(summary)
+    if not fd_omissions:
+        fd_omissions = ["- No first-difference regressors were dropped."]
+    spec_display = spec_tests.rename(
+        columns={
+            "lm_pvalue": "LM p-value",
+            "f_pooled_pvalue": "FE F-test p-value",
+            "hausman_pvalue": "Hausman p-value",
+        }
+    )
+    diag_display = diag_tests.rename(
+        columns={
+            "serial_correlation_pvalue": "Serial-correlation p-value",
+            "breusch_pagan_pvalue": "Breusch-Pagan p-value",
+            "pesaran_cd_pvalue": "Pesaran CD p-value",
+        }
+    )
+    robust_columns = ", ".join(
+        f"`{col}`" for col in robust_se.columns if col.startswith("se_")
     )
     path.write_text(
         "\n".join(
@@ -669,18 +766,24 @@ def write_panel_documentation(paths: tuple[Path, ...]) -> Path:
                 "  specification (2010-2019), the small-panel reduced specification",
                 "  (drops `life_exp` and `education`, adds the `tot_growth*trade`",
                 "  interaction), and the broad 1990-2020 main panel reduced spec.",
-                "- Specification tests reproduce the LM test against pooled OLS",
-                "  (computed from pooled residuals using the Breusch-Pagan formula),",
-                "  the F test for fixed effects against pooled OLS (from",
+                "- First-difference models remove regressors that become all-zero",
+                "  after within-country differencing, matching the effective model",
+                "  fit rather than emitting blank inference columns.",
+                *fd_omissions,
+                "- Specification tests reproduce the LM test target against pooled",
+                "  OLS (computed from pooled residuals using the Breusch-Pagan LM",
+                "  formula), the F test for fixed effects against pooled OLS (from",
                 "  `linearmodels.PanelResults.f_pooled`), and the Hausman test",
                 "  (using the inverse covariance of the parameter difference).",
-                "- Diagnostic tests cover Wooldridge serial correlation (auxiliary",
-                "  regression of first-differenced residuals with clustered SE),",
-                "  Breusch-Pagan heteroskedasticity on residuals against the fitted",
-                "  values, and the Pesaran cross-sectional dependence statistic on",
-                "  the residual correlation matrix.",
+                "- Diagnostic tests map the R workflow's `pbgtest`, `bptest`, and",
+                "  `pcdtest` calls to explicit Python implementations. The serial",
+                "  correlation column is labelled as a Breusch-Godfrey panel proxy",
+                "  because `plm::pbgtest` is not available in Python; the",
+                "  Breusch-Pagan test uses the fitted model design matrix, and",
+                "  Pesaran CD uses the residual correlation matrix.",
                 "- Robust covariance variants for the main FE specification include",
-                "  classical, Arellano (entity-clustered), double-clustered, and",
+                f"  {robust_columns}. This covers the R workflow's classical,",
+                "  Arellano/entity-clustered, time-clustered, double-clustered, and",
                 "  Driscoll-Kraay standard errors. Driscoll-Kraay is implemented in",
                 "  Python following the SCC formulation with the lag truncation rule",
                 "  `floor(4 * (T/100)**(2/9))` to match R's `sandwich::vcovSCC`.",
@@ -692,6 +795,28 @@ def write_panel_documentation(paths: tuple[Path, ...]) -> Path:
                 "  `linearmodels` finite-sample corrections and degrees-of-freedom",
                 "  conventions. The reproduction contract treats these as",
                 "  best-effort.",
+                "",
+                "## Current Specification-Test Evidence",
+                "",
+                *_markdown_table(
+                    spec_display,
+                    ("block", "LM p-value", "FE F-test p-value", "Hausman p-value"),
+                ),
+                "",
+                "## Current Diagnostic-Test Evidence",
+                "",
+                *_markdown_table(
+                    diag_display,
+                    (
+                        "block",
+                        "serial_correlation_test",
+                        "Serial-correlation p-value",
+                        "heteroskedasticity_test",
+                        "Breusch-Pagan p-value",
+                        "cross_sectional_dependence_test",
+                        "Pesaran CD p-value",
+                    ),
+                ),
                 "",
             ]
         ),
@@ -752,22 +877,19 @@ def write_panel_outputs() -> PanelResult:
             "main_reduced_random",
         ),
     )
-    paths.extend(
-        _write_table(specification_tests(fits, spec_blocks), "specification_tests")
-    )
+    spec_tests = specification_tests(fits, spec_blocks)
+    paths.extend(_write_table(spec_tests, "specification_tests"))
 
     diag_blocks = (
         ("small_full", "small_full_fixed"),
         ("small_reduced", "small_reduced_fixed"),
         ("main_reduced", "main_reduced_fixed"),
     )
-    paths.extend(_write_table(diagnostic_tests(fits, diag_blocks), "diagnostic_tests"))
+    diag_tests = diagnostic_tests(fits, diag_blocks)
+    paths.extend(_write_table(diag_tests, "diagnostic_tests"))
 
-    paths.extend(
-        _write_table(
-            panel_robust_se_table(fits["main_reduced_fixed"]), "fixed_effects_main"
-        )
-    )
+    robust_se = panel_robust_se_table(fits["main_reduced_fixed"])
+    paths.extend(_write_table(robust_se, "fixed_effects_main"))
 
     paths.extend(
         _write_table(
@@ -775,5 +897,7 @@ def write_panel_outputs() -> PanelResult:
         )
     )
 
-    documentation_path = write_panel_documentation(tuple(paths))
+    documentation_path = write_panel_documentation(
+        tuple(paths), summary, spec_tests, diag_tests, robust_se
+    )
     return PanelResult(output_paths=tuple(paths), documentation_path=documentation_path)

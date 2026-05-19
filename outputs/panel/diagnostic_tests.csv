@@ -1,4 +1,4 @@
-block,wooldridge_pvalue,breusch_pagan_pvalue,pesaran_cd_pvalue
-small_full,0.20745403136234097,0.8606249425465762,0.0
-small_reduced,0.011341920658058724,0.12330288118642686,0.0
-main_reduced,5.6310406242099376e-05,0.012369472727834948,0.0
+block,serial_correlation_test,serial_correlation_pvalue,heteroskedasticity_test,breusch_pagan_pvalue,cross_sectional_dependence_test,pesaran_cd_pvalue
+small_full,Breusch-Godfrey panel proxy,0.006757184850552171,Breusch-Pagan on model design,0.0007859560906624686,Pesaran CD,0.0
+small_reduced,Breusch-Godfrey panel proxy,0.03432959170360616,Breusch-Pagan on model design,0.0012588745625025067,Pesaran CD,0.0
+main_reduced,Breusch-Godfrey panel proxy,3.4005848656585584e-16,Breusch-Pagan on model design,1.60156558589861e-05,Pesaran CD,0.0

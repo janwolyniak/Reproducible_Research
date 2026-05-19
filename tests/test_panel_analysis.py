@@ -61,6 +61,14 @@ def test_all_specs_fit_without_exception(prepared_panels) -> None:
     assert "log_cc_total" in summary["term"].unique()
 
 
+def test_first_difference_models_have_inference_columns(prepared_panels) -> None:
+    summary, _ = panel_summary_table(MODEL_SPECS, prepared_panels)
+    fd_rows = summary.loc[summary["model_kind"] == "first_difference"]
+    assert len(fd_rows) > 0
+    assert fd_rows[["std_error", "t_stat", "p_value"]].notna().all().all()
+    assert np.isfinite(fd_rows[["std_error", "t_stat", "p_value"]].to_numpy()).all()
+
+
 def test_main_fe_log_cc_total_is_positive(prepared_panels) -> None:
     spec = next(s for s in MODEL_SPECS if s.name == "main_reduced_fixed")
     fit = fit_panel_model(spec, prepared_panels[spec.dataset])
@@ -113,7 +121,14 @@ def test_individual_specification_helpers(prepared_panels) -> None:
 def test_diagnostic_tests_return_probabilities(prepared_panels) -> None:
     _, fits = panel_summary_table(MODEL_SPECS, prepared_panels)
     table = diagnostic_tests(fits, (("main_reduced", "main_reduced_fixed"),))
-    for column in ("wooldridge_pvalue", "breusch_pagan_pvalue", "pesaran_cd_pvalue"):
+    assert table["serial_correlation_test"].iloc[0] == "Breusch-Godfrey panel proxy"
+    assert table["heteroskedasticity_test"].iloc[0] == "Breusch-Pagan on model design"
+    assert table["cross_sectional_dependence_test"].iloc[0] == "Pesaran CD"
+    for column in (
+        "serial_correlation_pvalue",
+        "breusch_pagan_pvalue",
+        "pesaran_cd_pvalue",
+    ):
         value = float(table[column].iloc[0])
         assert 0.0 <= value <= 1.0
 
@@ -175,11 +190,18 @@ def test_robust_se_table_covers_all_variants(prepared_panels) -> None:
         "coefficient",
         "se_classical",
         "se_arellano",
+        "se_time_cluster",
         "se_double_cluster",
         "se_driscoll_kraay",
     } <= set(table.columns)
     finite = table[
-        ["se_classical", "se_arellano", "se_double_cluster", "se_driscoll_kraay"]
+        [
+            "se_classical",
+            "se_arellano",
+            "se_time_cluster",
+            "se_double_cluster",
+            "se_driscoll_kraay",
+        ]
     ].dropna()
     assert (finite > 0).all().all()
 

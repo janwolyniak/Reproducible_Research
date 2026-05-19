@@ -273,7 +273,8 @@ Kinga implementation update, 2026-05-19:
   Hausman test. See `outputs/panel/specification_tests.{csv,html}`.
 - [x] Reproduce diagnostic tests: serial correlation, heteroskedasticity, and
   cross-sectional dependence. See `outputs/panel/diagnostic_tests.{csv,html}`
-  (Wooldridge, Breusch-Pagan, Pesaran CD).
+  (Breusch-Godfrey panel proxy for the R `pbgtest` target, Breusch-Pagan on the
+  fitted model design, Pesaran CD).
 - [x] Implement robust covariance variants used in the R workflow, including
   Driscoll-Kraay, Arellano-style, clustered, or double-clustered standard errors
   where Python support is available. See `outputs/panel/fixed_effects_main.{csv,
