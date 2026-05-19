@@ -46,8 +46,10 @@ Owner: Jan, with review by Kinga and Iwo.
 
 ## Phase 0 Audit Issues and Decisions
 
-The detailed audit contract is in `docs/reproduction_contract.md`. The following
-items must stay visible during implementation phases.
+The detailed audit contract is in `docs/reproduction_contract.md`. The machine-
+generated audit report is in `docs/phase0_audit.md` (regenerate with
+`py scripts/audit_phase0.py`). The following items must stay visible during
+implementation phases.
 
 - [ ] Raw upstream data files are not present for World Bank, V-Dem, CCCD, legal
   origins, continent groups, or colonization status. Until raw acquisition is
@@ -56,15 +58,19 @@ items must stay visible during implementation phases.
   `GDP_growth`/`GDPgrowth`, `tot`/`tot2`/`tot_growth`,
   `Country Code`/`Country_Code`/`Country_Name`/`Country`/`cname`, and
   `gov_exp_milit`/`gov_exp_mil`.
-- [ ] Treat `cross-section/inorder.R` and `panel/inorder_panel.R` as workflow
+- [x] Treat `cross-section/inorder.R` and `panel/inorder_panel.R` as workflow
   evidence, not executable scripts. They contain bare section labels,
   exploratory fragments, and unresolved object references.
 - [ ] Confirm the cross-sectional outlier rule in code. The paper says five
   outliers were removed and the cleaned dataset has 157 countries, while the
-  main OLS tables use 121-122 observations after model-wise missingness.
+  main OLS tables use 121-122 observations after model-wise missingness. The
+  audit (`docs/phase0_audit.md`, section 4) confirms `model_data4` (162 rows)
+  drops 5 countries -- Congo, Rep.; Lesotho; Luxembourg; Malta; Singapore --
+  to produce `model_data4_o` (157 rows); the OLS-table count gap still has to
+  be reproduced by replaying the model-wise missingness in Python.
 - [ ] Implement panel diagnostic and robust-covariance checks carefully because
   R `plm` and Python libraries may use different finite-sample corrections.
-- [ ] Keep HTML/CSS styling and exact plot pixels as best-effort targets; compare
+- [x] Keep HTML/CSS styling and exact plot pixels as best-effort targets; compare
   numerical table values and plot source data instead.
 
 ## Phase 1: Repository Structure and Environment Baseline
