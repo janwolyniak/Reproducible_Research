@@ -51,12 +51,12 @@ generated audit report is in `docs/phase0_audit.md` (regenerate with
 `py scripts/audit_phase0.py`). The following items must stay visible during
 implementation phases.
 
-- [ ] Full raw upstream downloads are not present for World Bank, V-Dem, CCCD,
-  legal origins, continent groups, or colonization status. The repository does
-  include processed upstream-derived `.rds` inputs, including
-  `CCCD_detailed_avg2010_19.rds`, `CCCD_growth_final.rds`, `oth_char.rds`, and
-  `tot2.rds`. Until raw acquisition is added, these tracked `.rds` files are
-  the source of record.
+- [ ] Full upstream raw/bulk downloads are not fully present, but
+  `cross-section/data/` now contains processed source-level inputs for the
+  cross-sectional workflow: CCCD averages/details/growth files, V-Dem democracy
+  averages, World Bank-style variable extracts, CEPII geography
+  `geo_cepii.dta`, and grouping data in `oth_char.rds`. Until raw acquisition
+  is expanded, these tracked input files are the source of record.
 - [ ] Reconcile variable names before writing reusable loaders:
   `GDP_growth`/`GDPgrowth`, `tot`/`tot2`/`tot_growth`,
   `Country Code`/`Country_Code`/`Country_Name`/`Country`/`cname`, and
