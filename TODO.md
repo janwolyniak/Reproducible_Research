@@ -134,19 +134,30 @@ Implementation update, 2026-05-19:
 
 ## Phase 2: Data Preparation in Python
 
-- [ ] Inventory all `.rds` inputs in `cross-section/data/` and
-  `panel/data_panel/`.
+- [x] Inventory all `.rds` inputs in `cross-section/data/` and
+  `panel/data_panel/`. Panel side: see `docs/phase0_audit.md` sections 1-3 and
+  the loader schemas in `src/repro_research/panel_data.py`. Cross-section side
+  pending.
 - [ ] Convert required `.rds` files to CSV or load them directly in Python with a
-  documented, repeatable path.
+  documented, repeatable path. Panel side: loaded directly via `pyreadr` in
+  `src/repro_research/panel_data.py`; prepared frames materialised as CSV under
+  `outputs/intermediate/panel/`. Cross-section side pending.
 - [ ] Build reusable data-loading functions with explicit schemas and clear
   handling of missing values, categorical fields, country identifiers, and year
-  fields.
+  fields. Panel side: `load_panel("main"|"alt"|"small")` with `PanelSpec`
+  schemas and shared `country_naming.to_canonical`. Cross-section side pending.
 - [ ] Recreate transformations used by the R scripts, including logs, lags,
   interaction terms, outlier-filtered datasets, and country/year panel indexes.
-- [ ] Save intermediate clean datasets only when they improve reproducibility;
-  otherwise regenerate them during the pipeline.
+  Panel side: `add_log_compliance`, `add_lag_log_gdppc`,
+  `add_tot_trade_interaction`, `subset_period`, `subset_by_continent`,
+  `subset_by_legal_origin` in `src/repro_research/panel_transforms.py`. Cross-
+  section outlier-filtered subset pending.
+- [x] Save intermediate clean datasets only when they improve reproducibility;
+  otherwise regenerate them during the pipeline. Panel side: `scripts/
+  run_panel_prep.py` writes CSV caches under `outputs/intermediate/panel/` and
+  is wired into `pipeline.run_all`.
 - [ ] Add a data dictionary in `docs/data_dictionary.md` for the variables used
-  in the reproduced models.
+  in the reproduced models. Panel section added; cross-section section pending.
 
 Owners: Kinga for cross-sectional data; Iwo for panel data; Jan for shared
 loader integration.

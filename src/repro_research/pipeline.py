@@ -68,13 +68,18 @@ def run_all() -> int:
         print(validation.render())
         return 1
 
-    phase0 = _run_python_script(PROJECT_ROOT / "scripts" / "audit_phase0.py")
-    log_path = write_run_summary([phase0])
+    steps = [
+        _run_python_script(PROJECT_ROOT / "scripts" / "audit_phase0.py"),
+        _run_python_script(PROJECT_ROOT / "scripts" / "run_panel_prep.py"),
+    ]
+    log_path = write_run_summary(steps)
 
-    if phase0.stdout:
-        print(phase0.stdout, end="")
-    if phase0.stderr:
-        print(phase0.stderr, file=sys.stderr, end="")
+    for step in steps:
+        if step.stdout:
+            print(step.stdout, end="")
+        if step.stderr:
+            print(step.stderr, file=sys.stderr, end="")
     print(f"Wrote {log_path.relative_to(PROJECT_ROOT)}")
 
-    return phase0.returncode
+    failed = next((s for s in steps if not s.ok), None)
+    return 0 if failed is None else failed.returncode
