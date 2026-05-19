@@ -1,0 +1,243 @@
+# TODO: Final Reproducible Research Project
+
+## Objective
+
+Reproduce the research already collected in this repository in Python, using the
+original materials as the reference implementation:
+
+- `2400-LIC-FII.pdf` as the paper to be reproduced.
+- `cross-section/` as the cross-sectional R workflow and reference outputs.
+- `panel/` as the panel-data R workflow and reference outputs.
+
+The final submission must satisfy every requirement from `OUTLINE.md`: visible
+GitHub contribution history, documented code and results, clean user-friendly
+code, and a Docker-based reproducible environment that can be pulled and run by
+the reviewer.
+
+## Contributors and Ownership
+
+| Contributor | Primary ownership | Required visible contribution evidence |
+| --- | --- | --- |
+| Jan Wolyniak | Python project structure, reproducibility pipeline, Docker, final integration | Commits adding the runnable project skeleton, orchestration script, Dockerfile, docker-compose setup, and final run instructions |
+| Kinga Kucharska | Cross-sectional reproduction | Commits adding Python data loading, descriptive statistics, correlations, OLS models, robust standard errors, diagnostics, and exported cross-sectional tables/figures |
+| Iwo Wiszejko | Panel-data reproduction | Commits adding Python panel-data preparation, pooled/between/first-difference/fixed/random effects models, specification tests, robust covariance estimates, and exported panel tables/figures |
+
+Shared tasks must still have clear authorship in Git history. When work is
+paired, the commit message or PR description should name the reviewer and the
+main implementer.
+
+## Phase 0: Source Audit and Reproduction Contract
+
+- [ ] Read `2400-LIC-FII.pdf` and write a concise reproduction summary in
+  `docs/reproduction_contract.md`.
+- [ ] Identify the paper's research question, dependent variables, key
+  explanatory variables, controls, model families, and expected tables/figures.
+- [ ] Map every relevant R artifact to the Python artifact that will replace it:
+  `cross-section/inorder.R`, `panel/inorder_panel.R`, existing `.rds` data, HTML
+  tables, plots, and diagnostics.
+- [ ] Decide which outputs are exact-reproduction targets and which are
+  best-effort approximations due to library differences between R and Python.
+- [ ] Record all known limitations and acceptable numerical tolerances before
+  writing the Python models.
+- [ ] Create an initial issue/section in this TODO for any missing data,
+  ambiguous variables, or undocumented transformations found during the audit.
+
+Owner: Jan, with review by Kinga and Iwo.
+
+## Phase 1: Repository Structure and Environment Baseline
+
+- [ ] Create a clean Python project layout, for example:
+  - `src/repro_research/` for reusable Python modules.
+  - `scripts/` for command-line entry points.
+  - `outputs/` for regenerated tables, figures, and logs.
+  - `docs/` for reproduction notes, AI disclosure, and final run instructions.
+- [ ] Add dependency management with pinned or constrained versions
+  (`requirements.txt`, `pyproject.toml`, or both).
+- [ ] Keep the existing `helpers/rds_to_csv.py` workflow available for converting
+  `.rds` files into reproducible CSV inputs.
+- [ ] Add a single command such as `python scripts/run_all.py` that rebuilds all
+  Python outputs from the tracked inputs.
+- [ ] Add a lightweight validation command that checks that required input data
+  and expected output directories exist.
+- [ ] Update `.gitignore` so generated caches are ignored while final
+  reproducibility artifacts remain trackable when appropriate.
+
+Owner: Jan.
+
+## Phase 2: Data Preparation in Python
+
+- [ ] Inventory all `.rds` inputs in `cross-section/data/` and
+  `panel/data_panel/`.
+- [ ] Convert required `.rds` files to CSV or load them directly in Python with a
+  documented, repeatable path.
+- [ ] Build reusable data-loading functions with explicit schemas and clear
+  handling of missing values, categorical fields, country identifiers, and year
+  fields.
+- [ ] Recreate transformations used by the R scripts, including logs, lags,
+  interaction terms, outlier-filtered datasets, and country/year panel indexes.
+- [ ] Save intermediate clean datasets only when they improve reproducibility;
+  otherwise regenerate them during the pipeline.
+- [ ] Add a data dictionary in `docs/data_dictionary.md` for the variables used
+  in the reproduced models.
+
+Owners: Kinga for cross-sectional data; Iwo for panel data; Jan for shared
+loader integration.
+
+## Phase 3: Cross-Sectional Reproduction
+
+- [ ] Reproduce descriptive statistics from
+  `cross-section/tables_and_other/descriptive stat.html`.
+- [ ] Reproduce Spearman correlation matrices and correlation plots from the
+  cross-sectional workflow.
+- [ ] Recreate the main OLS specifications from `cross-section/inorder.R`,
+  including the preferred models around GDP growth, constitutional compliance,
+  trade, terms of trade, investment, government expenditure, and GDP per capita.
+- [ ] Implement robust standard errors where used in the R workflow.
+- [ ] Reproduce diagnostic checks: RESET, variance inflation factors, residual
+  normality checks, heteroskedasticity tests, Durbin-Watson/autocorrelation
+  checks, leverage, standardized residuals, and Cook's distance.
+- [ ] Recreate the outlier-filtered robustness regressions.
+- [ ] Recreate alternative institutional-variable regressions where they are
+  part of the paper's argument.
+- [ ] Export publication-ready tables and figures to `outputs/cross_section/`.
+- [ ] Write `docs/cross_section_reproduction.md` explaining what matches the R
+  outputs and where Python results differ.
+
+Owner: Kinga. Reviewer: Jan.
+
+## Phase 4: Panel Reproduction
+
+- [ ] Reproduce panel descriptive statistics and correlation outputs from
+  `panel/inorder_panel.R`.
+- [ ] Build panel indexes by country and year.
+- [ ] Recreate pooled OLS, between, first-difference, fixed-effects, and
+  random-effects models.
+- [ ] Recreate the reduced/small panel specifications used for 2010-2019 and
+  the broader 1990-2020 comparison where applicable.
+- [ ] Reproduce specification tests: LM test, F test for fixed effects, and
+  Hausman test.
+- [ ] Reproduce diagnostic tests: serial correlation, heteroskedasticity, and
+  cross-sectional dependence.
+- [ ] Implement robust covariance variants used in the R workflow, including
+  Driscoll-Kraay, Arellano-style, clustered, or double-clustered standard errors
+  where Python support is available.
+- [ ] Recreate alternative fixed-effects regressions for compliance components
+  such as basic, civil, political, and property compliance.
+- [ ] Export publication-ready tables and figures to `outputs/panel/`.
+- [ ] Write `docs/panel_reproduction.md` explaining what matches the R outputs
+  and where Python results differ.
+
+Owner: Iwo. Reviewer: Jan.
+
+## Phase 5: Paper-Level Comparison and Results Documentation
+
+- [ ] Create a master results index in `outputs/README.md`.
+- [ ] Compare regenerated Python outputs against the existing R-generated HTML
+  tables and plots.
+- [ ] Add a table-by-table and figure-by-figure reproduction checklist in
+  `docs/reproduction_results.md`.
+- [ ] Explain any non-matching results with concrete causes, such as different
+  default covariance estimators, missing-value handling, lag construction, or
+  package-level implementation differences.
+- [ ] Include short interpretation notes so the reviewer can see how the Python
+  results relate to the paper's economic argument.
+- [ ] Ensure all final tables and figures can be regenerated from a clean clone.
+
+Owners: Jan for integration; Kinga for cross-section notes; Iwo for panel notes.
+
+## Phase 6: Docker and Full Reproducibility
+
+- [ ] Add a `Dockerfile` that installs Python, system dependencies, project
+  dependencies, and any packages required for reading `.rds` files.
+- [ ] Add `docker-compose.yaml` with a service that runs the complete
+  reproduction pipeline.
+- [ ] Add `.dockerignore` to keep the build context small and deterministic.
+- [ ] Make the default container command run the full reproduction or print a
+  clear command for doing so.
+- [ ] Verify that a clean Docker build can run `python scripts/run_all.py`
+  without local-machine assumptions.
+- [ ] Document exact Docker commands in `README.md`, including build, run,
+  output location, and troubleshooting.
+- [ ] Build and push the final image to Docker Hub.
+- [ ] Record the Docker Hub image name and tag in `README.md`.
+
+Owner: Jan. Reviewers: Kinga and Iwo must independently run the documented
+Docker command before final submission.
+
+## Phase 7: Clean Code and User-Friendly Interface
+
+- [ ] Format Python code with Black.
+- [ ] Lint Python code with Ruff.
+- [ ] Keep functions short and explicit where practical.
+- [ ] Use clear module boundaries: data loading, transformations, models,
+  diagnostics, tables, figures, and orchestration.
+- [ ] Add meaningful command-line flags where useful, for example output
+  directory, skip-plots, or strict-validation mode.
+- [ ] Avoid notebook-only execution; notebooks may be included only as optional
+  exploration, not as the only reproducible path.
+- [ ] Add minimal tests for critical logic, especially data loading,
+  transformations, and model-output smoke checks.
+
+Owners: all contributors for their code; Jan for final consistency pass.
+
+## Phase 8: Documentation Required by `OUTLINE.md`
+
+- [ ] Update `README.md` with project objective, source paper, repository
+  structure, quickstart, local run instructions, Docker run instructions, output
+  descriptions, and contributor roles.
+- [ ] Add `docs/ai_disclosure.md` stating how AI tools were used, which model
+  was used, and which parts were human-reviewed.
+- [ ] Add source annotations for externally sourced code snippets or formulas.
+- [ ] Add `docs/methodology.md` describing the reproduction method in plain
+  language.
+- [ ] Add `docs/limitations.md` describing reproducibility gaps, numerical
+  tolerances, and unresolved differences from the original R outputs.
+- [ ] Ensure the project can be understood by a reviewer after cloning the repo,
+  without private local paths or hidden setup steps.
+
+Owners: Jan for README and AI disclosure; Kinga for cross-sectional methodology;
+Iwo for panel methodology.
+
+## Phase 9: GitHub Contribution Evidence
+
+- [ ] Each contributor makes commits under their own GitHub identity.
+- [ ] Commit messages are descriptive and imperative, for example `Add panel
+  fixed-effects reproduction`.
+- [ ] Use branches or pull requests if practical so review history is visible.
+- [ ] Keep final generated outputs, documentation, and code changes organized in
+  reviewable commits.
+- [ ] Before submission, add a contribution summary table to `README.md` or
+  `docs/contributions.md`.
+- [ ] Verify that GitHub history visibly supports the contribution split claimed
+  in the documentation.
+
+Owners: all contributors.
+
+## Phase 10: Presentation Preparation
+
+- [ ] Prepare a roughly 20-minute presentation covering the research question,
+  original paper, data, Python reproduction, Docker workflow, and main results.
+- [ ] Include all team members in the speaking plan.
+- [ ] Include a short live or recorded code demonstration using the documented
+  run command.
+- [ ] Show the Docker workflow because the project will be run after pulling
+  from GitHub in the lab.
+- [ ] Prepare fallback screenshots or pre-rendered outputs in case the lab
+  environment has limited time or network issues.
+
+Owners: all contributors. Jan covers reproducibility and Docker; Kinga covers
+cross-section; Iwo covers panel.
+
+## Final Submission Checklist
+
+- [ ] Fresh clone works locally with documented commands.
+- [ ] Fresh Docker build works.
+- [ ] Docker image is pushed to Docker Hub and documented.
+- [ ] `python scripts/run_all.py` regenerates all expected outputs.
+- [ ] README explains the full workflow.
+- [ ] AI disclosure is present.
+- [ ] Contribution summary is present.
+- [ ] Cross-sectional outputs are regenerated in Python.
+- [ ] Panel outputs are regenerated in Python.
+- [ ] Reproduction limitations are documented.
+- [ ] Presentation materials are ready.
