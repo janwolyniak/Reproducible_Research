@@ -219,8 +219,12 @@ def test_alternative_fe_table_covers_four_variants(prepared_panels) -> None:
     }
 
 
-def test_write_panel_outputs_produces_expected_files() -> None:
-    result = write_panel_outputs()
+def test_write_panel_outputs_supports_custom_dir_without_plots(tmp_path: Path) -> None:
+    result = write_panel_outputs(
+        output_dir=tmp_path / "panel",
+        docs_dir=tmp_path / "docs",
+        skip_plots=True,
+    )
     expected_stems = {
         "descriptive_statistics",
         "spearman_correlation_matrix",
@@ -235,4 +239,6 @@ def test_write_panel_outputs_produces_expected_files() -> None:
     }
     written_stems = {Path(path).stem for path in result.output_paths}
     assert expected_stems <= written_stems
+    assert all(path.suffix != ".png" for path in result.output_paths)
+    assert result.documentation_path == tmp_path / "docs" / "panel_reproduction.md"
     assert result.documentation_path.exists()

@@ -238,8 +238,10 @@ def panel_correlation_matrix(df: pd.DataFrame) -> pd.DataFrame:
     return complete.corr(method="spearman")
 
 
-def write_panel_correlation_plot(correlation: pd.DataFrame) -> Path:
-    FIGURE_DIR.mkdir(parents=True, exist_ok=True)
+def write_panel_correlation_plot(
+    correlation: pd.DataFrame, figure_dir: Path = FIGURE_DIR
+) -> Path:
+    figure_dir.mkdir(parents=True, exist_ok=True)
     mask = np.triu(np.ones_like(correlation, dtype=bool))
     fig, ax = plt.subplots(figsize=(10, 8))
     sns.heatmap(
@@ -255,7 +257,7 @@ def write_panel_correlation_plot(correlation: pd.DataFrame) -> Path:
     )
     ax.set_title("Panel Spearman correlations")
     fig.tight_layout()
-    path = FIGURE_DIR / "correlation_plot.png"
+    path = figure_dir / "correlation_plot.png"
     fig.savefig(path, dpi=200)
     plt.close(fig)
     return path
@@ -662,13 +664,20 @@ def alternative_fe_table(frames: dict[str, pd.DataFrame]) -> pd.DataFrame:
 
 
 def _write_table(
-    frame: pd.DataFrame, stem: str, *, index: bool = False
+    frame: pd.DataFrame, stem: str, output_dir: Path, *, index: bool = False
 ) -> tuple[Path, Path]:
-    csv_path = OUTPUT_DIR / f"{stem}.csv"
-    html_path = OUTPUT_DIR / f"{stem}.html"
+    csv_path = output_dir / f"{stem}.csv"
+    html_path = output_dir / f"{stem}.html"
     frame.to_csv(csv_path, index=index)
     frame.to_html(html_path, index=index, float_format=lambda value: f"{value:.6g}")
     return csv_path, html_path
+
+
+def _display_path(path: Path) -> str:
+    try:
+        return path.relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        return path.as_posix()
 
 
 def _format_pvalue(value: object) -> str:
@@ -715,11 +724,11 @@ def write_panel_documentation(
     spec_tests: pd.DataFrame,
     diag_tests: pd.DataFrame,
     robust_se: pd.DataFrame,
+    docs_dir: Path = DOCS_DIR,
 ) -> Path:
-    path = DOCS_DIR / "panel_reproduction.md"
-    artifact_lines = "\n".join(
-        f"- `{artifact.relative_to(PROJECT_ROOT).as_posix()}`" for artifact in paths
-    )
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    path = docs_dir / "panel_reproduction.md"
+    artifact_lines = "\n".join(f"- `{_display_path(artifact)}`" for artifact in paths)
     fd_omissions = _first_difference_omissions(summary)
     if not fd_omissions:
         fd_omissions = ["- No first-difference regressors were dropped."]
@@ -825,17 +834,26 @@ def write_panel_documentation(
     return path
 
 
-def write_panel_outputs() -> PanelResult:
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    FIGURE_DIR.mkdir(parents=True, exist_ok=True)
-    DOCS_DIR.mkdir(parents=True, exist_ok=True)
+def write_panel_outputs(
+    output_dir: Path = OUTPUT_DIR,
+    docs_dir: Path = DOCS_DIR,
+    *,
+    skip_plots: bool = False,
+) -> PanelResult:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    figure_dir = output_dir / "figures"
+    if not skip_plots:
+        figure_dir.mkdir(parents=True, exist_ok=True)
+    docs_dir.mkdir(parents=True, exist_ok=True)
 
     frames = _prepared_panels()
     paths: list[Path] = []
 
     paths.extend(
         _write_table(
-            panel_descriptive_statistics(frames["alt"]), "descriptive_statistics"
+            panel_descriptive_statistics(frames["alt"]),
+            "descriptive_statistics",
+            output_dir,
         )
     )
 
@@ -844,12 +862,14 @@ def write_panel_outputs() -> PanelResult:
         _write_table(
             corr.reset_index().rename(columns={"index": "Variable"}),
             "spearman_correlation_matrix",
+            output_dir,
         )
     )
-    paths.append(write_panel_correlation_plot(corr))
+    if not skip_plots:
+        paths.append(write_panel_correlation_plot(corr, figure_dir))
 
     summary, fits = panel_summary_table(MODEL_SPECS, frames)
-    paths.extend(_write_table(summary, "panel_models"))
+    paths.extend(_write_table(summary, "panel_models", output_dir))
     for table_group in (
         "models_small_full",
         "models_small_reduced",
@@ -860,7 +880,7 @@ def write_panel_outputs() -> PanelResult:
             table_group,
             tuple(spec.name for spec in MODEL_SPECS if spec.table_group == table_group),
         )
-        paths.extend(_write_table(group, table_group))
+        paths.extend(_write_table(group, table_group, output_dir))
 
     spec_blocks = (
         ("small_full", "small_full_pooling", "small_full_fixed", "small_full_random"),
@@ -878,7 +898,7 @@ def write_panel_outputs() -> PanelResult:
         ),
     )
     spec_tests = specification_tests(fits, spec_blocks)
-    paths.extend(_write_table(spec_tests, "specification_tests"))
+    paths.extend(_write_table(spec_tests, "specification_tests", output_dir))
 
     diag_blocks = (
         ("small_full", "small_full_fixed"),
@@ -886,18 +906,20 @@ def write_panel_outputs() -> PanelResult:
         ("main_reduced", "main_reduced_fixed"),
     )
     diag_tests = diagnostic_tests(fits, diag_blocks)
-    paths.extend(_write_table(diag_tests, "diagnostic_tests"))
+    paths.extend(_write_table(diag_tests, "diagnostic_tests", output_dir))
 
     robust_se = panel_robust_se_table(fits["main_reduced_fixed"])
-    paths.extend(_write_table(robust_se, "fixed_effects_main"))
+    paths.extend(_write_table(robust_se, "fixed_effects_main", output_dir))
 
     paths.extend(
         _write_table(
-            alternative_fe_table(frames), "fixed_effects_compliance_categories"
+            alternative_fe_table(frames),
+            "fixed_effects_compliance_categories",
+            output_dir,
         )
     )
 
     documentation_path = write_panel_documentation(
-        tuple(paths), summary, spec_tests, diag_tests, robust_se
+        tuple(paths), summary, spec_tests, diag_tests, robust_se, docs_dir
     )
     return PanelResult(output_paths=tuple(paths), documentation_path=documentation_path)

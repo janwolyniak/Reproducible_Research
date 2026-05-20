@@ -302,13 +302,20 @@ MODEL_TABLE_GROUPS = {
 
 
 def _write_table(
-    frame: pd.DataFrame, stem: str, *, index: bool = False
+    frame: pd.DataFrame, stem: str, output_dir: Path, *, index: bool = False
 ) -> tuple[Path, Path]:
-    csv_path = OUTPUT_DIR / f"{stem}.csv"
-    html_path = OUTPUT_DIR / f"{stem}.html"
+    csv_path = output_dir / f"{stem}.csv"
+    html_path = output_dir / f"{stem}.html"
     frame.to_csv(csv_path, index=index)
     frame.to_html(html_path, index=index, float_format=lambda value: f"{value:.6g}")
     return csv_path, html_path
+
+
+def _display_path(path: Path) -> str:
+    try:
+        return path.relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        return path.as_posix()
 
 
 def _prepared_frames(frames: dict[str, CrossSectionFrame]) -> dict[str, pd.DataFrame]:
@@ -348,8 +355,10 @@ def correlation_matrix(frame: pd.DataFrame) -> pd.DataFrame:
     return complete.corr(method="spearman")
 
 
-def write_correlation_plot(correlation: pd.DataFrame) -> Path:
-    FIGURE_DIR.mkdir(parents=True, exist_ok=True)
+def write_correlation_plot(
+    correlation: pd.DataFrame, figure_dir: Path = FIGURE_DIR
+) -> Path:
+    figure_dir.mkdir(parents=True, exist_ok=True)
     mask = np.triu(np.ones_like(correlation, dtype=bool))
     fig, ax = plt.subplots(figsize=(10, 8))
     sns.heatmap(
@@ -365,7 +374,7 @@ def write_correlation_plot(correlation: pd.DataFrame) -> Path:
     )
     ax.set_title("Cross-sectional Spearman correlations")
     fig.tight_layout()
-    path = FIGURE_DIR / "correlation_plot.png"
+    path = figure_dir / "correlation_plot.png"
     fig.savefig(path, dpi=200)
     plt.close(fig)
     return path
@@ -623,11 +632,12 @@ def influence_table(
 
 def write_diagnostic_plots(
     result: sm.regression.linear_model.RegressionResultsWrapper,
+    figure_dir: Path = FIGURE_DIR,
 ) -> tuple[Path, Path, Path]:
-    FIGURE_DIR.mkdir(parents=True, exist_ok=True)
+    figure_dir.mkdir(parents=True, exist_ok=True)
     influence = OLSInfluence(result)
 
-    residual_path = FIGURE_DIR / "re4_o_residuals_vs_fitted.png"
+    residual_path = figure_dir / "re4_o_residuals_vs_fitted.png"
     fig, ax = plt.subplots(figsize=(7, 5))
     ax.scatter(result.fittedvalues, result.resid, alpha=0.75)
     ax.axhline(0, color="black", linewidth=1)
@@ -638,14 +648,14 @@ def write_diagnostic_plots(
     fig.savefig(residual_path, dpi=200)
     plt.close(fig)
 
-    qq_path = FIGURE_DIR / "re4_o_residual_qq.png"
+    qq_path = figure_dir / "re4_o_residual_qq.png"
     fig = sm.qqplot(result.resid, line="45", fit=True)
     fig.suptitle("re4_o residual Q-Q plot")
     fig.tight_layout()
     fig.savefig(qq_path, dpi=200)
     plt.close(fig)
 
-    cooks_path = FIGURE_DIR / "re4_o_cooks_distance.png"
+    cooks_path = figure_dir / "re4_o_cooks_distance.png"
     fig, ax = plt.subplots(figsize=(8, 5))
     cooks = influence.cooks_distance[0]
     ax.stem(np.arange(len(cooks)), cooks, markerfmt=",", basefmt=" ")
@@ -660,11 +670,12 @@ def write_diagnostic_plots(
     return residual_path, qq_path, cooks_path
 
 
-def write_cross_section_documentation(paths: tuple[Path, ...]) -> Path:
-    path = DOCS_DIR / "cross_section_reproduction.md"
-    artifact_lines = "\n".join(
-        f"- `{artifact.relative_to(PROJECT_ROOT).as_posix()}`" for artifact in paths
-    )
+def write_cross_section_documentation(
+    paths: tuple[Path, ...], docs_dir: Path = DOCS_DIR
+) -> Path:
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    path = docs_dir / "cross_section_reproduction.md"
+    artifact_lines = "\n".join(f"- `{_display_path(artifact)}`" for artifact in paths)
     path.write_text(
         "\n".join(
             [
@@ -719,10 +730,17 @@ def write_cross_section_documentation(paths: tuple[Path, ...]) -> Path:
     return path
 
 
-def write_cross_section_outputs() -> CrossSectionResult:
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    FIGURE_DIR.mkdir(parents=True, exist_ok=True)
-    DOCS_DIR.mkdir(parents=True, exist_ok=True)
+def write_cross_section_outputs(
+    output_dir: Path = OUTPUT_DIR,
+    docs_dir: Path = DOCS_DIR,
+    *,
+    skip_plots: bool = False,
+) -> CrossSectionResult:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    figure_dir = output_dir / "figures"
+    if not skip_plots:
+        figure_dir.mkdir(parents=True, exist_ok=True)
+    docs_dir.mkdir(parents=True, exist_ok=True)
 
     frames = load_cross_section_inputs()
     prepared = _prepared_frames(frames)
@@ -730,7 +748,9 @@ def write_cross_section_outputs() -> CrossSectionResult:
     paths: list[Path] = []
     paths.extend(
         _write_table(
-            descriptive_statistics(prepared["model_data2"]), "descriptive_statistics"
+            descriptive_statistics(prepared["model_data2"]),
+            "descriptive_statistics",
+            output_dir,
         )
     )
 
@@ -739,37 +759,49 @@ def write_cross_section_outputs() -> CrossSectionResult:
         _write_table(
             corr.reset_index().rename(columns={"index": "Variable"}),
             "spearman_correlation_matrix",
+            output_dir,
         )
     )
-    paths.append(write_correlation_plot(corr))
+    if not skip_plots:
+        paths.append(write_correlation_plot(corr, figure_dir))
 
     grouped = prepared.get("model_data4_grouped", prepared["model_data4_o"])
     paths.extend(
         _write_table(
-            grouped_spearman(grouped, "cc_total"), "spearman_growth_vs_cc_total"
+            grouped_spearman(grouped, "cc_total"),
+            "spearman_growth_vs_cc_total",
+            output_dir,
         )
     )
     paths.extend(
-        _write_table(grouped_spearman(grouped, "cc_prop"), "spearman_growth_vs_cc_prop")
+        _write_table(
+            grouped_spearman(grouped, "cc_prop"),
+            "spearman_growth_vs_cc_prop",
+            output_dir,
+        )
     )
 
     model_table, models = model_summary_table(MODEL_SPECS, prepared)
-    paths.extend(_write_table(model_table, "ols_models"))
+    paths.extend(_write_table(model_table, "ols_models", output_dir))
     for group_name, model_names in MODEL_TABLE_GROUPS.items():
         group = select_model_group(model_table, group_name, model_names)
-        paths.extend(_write_table(group, group_name))
+        paths.extend(_write_table(group, group_name, output_dir))
 
     inst_table, inst_models = model_summary_table(institutional_specs(), prepared)
-    paths.extend(_write_table(inst_table, "ols_institutional_variants"))
+    paths.extend(_write_table(inst_table, "ols_institutional_variants", output_dir))
 
     diagnostic_models = {
         key: value
         for key, value in {**models, **inst_models}.items()
         if key in {"re2_o", "re4_o", "re4_olv", "re4_oprop"} or key.startswith("inst")
     }
-    paths.extend(_write_table(diagnostics_table(diagnostic_models), "diagnostics"))
     paths.extend(
-        _write_table(vif_table(diagnostic_models), "variance_inflation_factors")
+        _write_table(diagnostics_table(diagnostic_models), "diagnostics", output_dir)
+    )
+    paths.extend(
+        _write_table(
+            vif_table(diagnostic_models), "variance_inflation_factors", output_dir
+        )
     )
 
     re4_o_spec = next(spec for spec in MODEL_SPECS if spec.name == "re4_o")
@@ -777,11 +809,13 @@ def write_cross_section_outputs() -> CrossSectionResult:
         _write_table(
             influence_table(models["re4_o"], prepared["model_data4_o"], re4_o_spec),
             "re4_o_influence_diagnostics",
+            output_dir,
         )
     )
-    paths.extend(write_diagnostic_plots(models["re4_o"]))
+    if not skip_plots:
+        paths.extend(write_diagnostic_plots(models["re4_o"], figure_dir))
 
-    documentation_path = write_cross_section_documentation(tuple(paths))
+    documentation_path = write_cross_section_documentation(tuple(paths), docs_dir)
     return CrossSectionResult(
         output_paths=tuple(paths), documentation_path=documentation_path
     )

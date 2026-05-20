@@ -35,6 +35,31 @@ rebuilds the cross-sectional and panel tables/figures, regenerates the
 component reproduction notes, writes `outputs/logs/run_all_summary.txt`, and
 checks that the expected regenerated output files exist.
 
+For faster local checks that only need tables and Markdown notes:
+
+```bash
+python scripts/run_all.py --skip-plots
+```
+
+`--skip-plots` skips the cross-sectional and panel PNG refreshes and therefore
+does not run the complete generated-output manifest check by default. Add
+`--strict-validation` when you intentionally want that full manifest check after
+a plot-skipping run.
+
+## Component Output Directories
+
+The cross-sectional and panel entry points can write to alternate review
+directories without disturbing the default `outputs/` tree:
+
+```bash
+python scripts/run_cross_section.py --output-dir outputs/review/cross_section --docs-dir outputs/review/docs --skip-plots
+python scripts/run_panel.py --output-dir outputs/review/panel --docs-dir outputs/review/docs --skip-plots
+```
+
+Both commands keep the default behavior when the flags are omitted. The
+`--skip-plots` option is useful for quick coefficient-table or documentation
+checks; omit it for submission artifacts.
+
 ## Validate Regenerated Outputs
 
 ```bash

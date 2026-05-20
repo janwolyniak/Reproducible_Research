@@ -22,6 +22,12 @@ class StepResult:
         return self.returncode == 0
 
 
+@dataclass(frozen=True)
+class RunAllOptions:
+    skip_plots: bool = False
+    strict_validation: bool = True
+
+
 def _run_python_script(script: Path, *args: str) -> StepResult:
     completed = subprocess.run(
         [sys.executable, str(script), *args],
@@ -62,33 +68,49 @@ def write_run_summary(step_results: list[StepResult]) -> Path:
     return log_path
 
 
-def run_all() -> int:
-    validation = validate_project(create_output_dirs=True)
-    if not validation.ok:
-        print(validation.render())
-        return 1
-
-    steps = [
+def _run_steps(options: RunAllOptions) -> list[StepResult]:
+    plot_args = ("--skip-plots",) if options.skip_plots else ()
+    return [
         _run_python_script(PROJECT_ROOT / "scripts" / "audit_phase0.py"),
         _run_python_script(PROJECT_ROOT / "scripts" / "run_panel_prep.py"),
         _run_python_script(PROJECT_ROOT / "scripts" / "run_cross_section_data.py"),
-        _run_python_script(PROJECT_ROOT / "scripts" / "run_cross_section.py"),
-        _run_python_script(PROJECT_ROOT / "scripts" / "run_panel.py"),
+        _run_python_script(
+            PROJECT_ROOT / "scripts" / "run_cross_section.py", *plot_args
+        ),
+        _run_python_script(PROJECT_ROOT / "scripts" / "run_panel.py", *plot_args),
         _run_python_script(PROJECT_ROOT / "scripts" / "inventory_data.py"),
     ]
-    log_path = write_run_summary(steps)
-    output_validation = validate_project(generated_outputs=True)
 
+
+def _print_step_output(steps: list[StepResult]) -> None:
     for step in steps:
         if step.stdout:
             print(step.stdout, end="")
         if step.stderr:
             print(step.stderr, file=sys.stderr, end="")
+
+
+def run_all(options: RunAllOptions | None = None) -> int:
+    options = options or RunAllOptions()
+    validation = validate_project(create_output_dirs=True)
+    if not validation.ok:
+        print(validation.render())
+        return 1
+
+    steps = _run_steps(options)
+    log_path = write_run_summary(steps)
+    output_validation = (
+        validate_project(generated_outputs=True) if options.strict_validation else None
+    )
+
+    _print_step_output(steps)
     print(f"Wrote {log_path.relative_to(PROJECT_ROOT)}")
-    if not output_validation.ok:
+    if output_validation is not None and not output_validation.ok:
         print(output_validation.render(), file=sys.stderr)
 
     failed = next((s for s in steps if not s.ok), None)
     if failed is not None:
         return failed.returncode
+    if output_validation is None:
+        return 0
     return 0 if output_validation.ok else 1

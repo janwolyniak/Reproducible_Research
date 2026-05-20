@@ -15,6 +15,7 @@ from repro_research.cross_section import (  # noqa: E402
     fit_model,
     model_summary_table,
     select_model_group,
+    write_cross_section_outputs,
 )
 from repro_research.cross_section_data import (  # noqa: E402
     add_cross_section_transformations,
@@ -82,3 +83,21 @@ def test_diagnostics_include_autocorrelation_p_value() -> None:
     assert "durbin_watson_stat" in diagnostics.columns
     assert "breusch_godfrey_lm_lag1_p_value" in diagnostics.columns
     assert diagnostics.loc[0, "breusch_godfrey_lm_lag1_p_value"] >= 0
+
+
+def test_write_cross_section_outputs_supports_custom_dir_without_plots(
+    tmp_path: Path,
+) -> None:
+    result = write_cross_section_outputs(
+        output_dir=tmp_path / "cross_section",
+        docs_dir=tmp_path / "docs",
+        skip_plots=True,
+    )
+
+    written_stems = {path.stem for path in result.output_paths}
+    assert {"descriptive_statistics", "ols_main", "diagnostics"} <= written_stems
+    assert all(path.suffix != ".png" for path in result.output_paths)
+    assert (
+        result.documentation_path == tmp_path / "docs" / "cross_section_reproduction.md"
+    )
+    assert result.documentation_path.exists()

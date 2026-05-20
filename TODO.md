@@ -432,19 +432,47 @@ Jan implementation update, 2026-05-20:
 
 ## Phase 7: Clean Code and User-Friendly Interface
 
-- [ ] Format Python code with Black.
-- [ ] Lint Python code with Ruff.
-- [ ] Keep functions short and explicit where practical.
-- [ ] Use clear module boundaries: data loading, transformations, models,
+- [x] Format Python code with Black.
+- [x] Lint Python code with Ruff.
+- [x] Keep functions short and explicit where practical.
+- [x] Use clear module boundaries: data loading, transformations, models,
   diagnostics, tables, figures, and orchestration.
-- [ ] Add meaningful command-line flags where useful, for example output
+- [x] Add meaningful command-line flags where useful, for example output
   directory, skip-plots, or strict-validation mode.
-- [ ] Avoid notebook-only execution; notebooks may be included only as optional
+- [x] Avoid notebook-only execution; notebooks may be included only as optional
   exploration, not as the only reproducible path.
-- [ ] Add minimal tests for critical logic, especially data loading,
+- [x] Add minimal tests for critical logic, especially data loading,
   transformations, and model-output smoke checks.
 
 Owners: all contributors for their code; Jan for final consistency pass.
+
+Jan final consistency update, 2026-05-20:
+
+- Added user-facing CLI controls to the reproducibility entry points:
+  `scripts/run_all.py --skip-plots`, `scripts/run_all.py --strict-validation`,
+  and component-level `--output-dir`, `--docs-dir`, and `--skip-plots` flags for
+  `scripts/run_cross_section.py` and `scripts/run_panel.py`.
+- Preserved the default no-notebook reproducibility path: `python
+  scripts/run_all.py` still rebuilds the full source audit, data inventory,
+  cross-sectional outputs, panel outputs, docs, run log, and generated-output
+  manifest.
+- Kept code boundaries aligned with the existing package layout:
+  `cross_section_data`/`panel_data` for loading, `panel_transforms` for
+  transformations, `cross_section`/`panel` for models, diagnostics, tables, and
+  figures, `validation` for manifest checks, and `pipeline` for orchestration.
+- Added smoke coverage proving custom output directories and plot-skipping
+  behavior for cross-sectional and panel writers.
+- Verification passed in the repo-local virtualenv:
+  `.venv/bin/python -m pytest tests/test_cross_section.py::test_write_cross_section_outputs_supports_custom_dir_without_plots tests/test_panel_analysis.py::test_write_panel_outputs_supports_custom_dir_without_plots`,
+  `.venv/bin/python scripts/run_all.py --help`,
+  `.venv/bin/python scripts/run_cross_section.py --help`, and
+  `.venv/bin/python scripts/run_panel.py --help`.
+- Final verification also passed:
+  `.venv/bin/python -m black --check src scripts helpers tests`,
+  `.venv/bin/python -m ruff check src scripts helpers tests`,
+  `.venv/bin/python -m pytest` (`35 passed`, with the existing panel
+  absorbed-variable warnings), `.venv/bin/python scripts/run_all.py`, and
+  `.venv/bin/python scripts/validate_project.py --generated-outputs`.
 
 ## Phase 8: Documentation Required by `OUTLINE.md`
 

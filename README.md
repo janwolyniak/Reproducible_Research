@@ -35,6 +35,15 @@ tables/figures, refreshes generated reproduction notes, checks the expected
 output set, and writes a local run log. Detailed commands are in
 `docs/run_instructions.md`.
 
+For faster table-only checks, skip plot regeneration:
+
+```bash
+python scripts/run_all.py --skip-plots
+```
+
+Use `--strict-validation` with `--skip-plots` only when the complete output
+manifest, including existing PNG figures, should still be required.
+
 Validate that all regenerated outputs are present:
 
 ```bash
@@ -45,6 +54,14 @@ Regenerate only the data inventory and shared data dictionary:
 
 ```bash
 python scripts/inventory_data.py
+```
+
+Regenerate component outputs into custom directories when reviewing isolated
+changes:
+
+```bash
+python scripts/run_cross_section.py --output-dir outputs/review/cross_section --docs-dir outputs/review/docs --skip-plots
+python scripts/run_panel.py --output-dir outputs/review/panel --docs-dir outputs/review/docs --skip-plots
 ```
 
 ## Docker Reproduction
