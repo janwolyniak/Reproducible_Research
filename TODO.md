@@ -476,36 +476,78 @@ Jan final consistency update, 2026-05-20:
 
 ## Phase 8: Documentation Required by `OUTLINE.md`
 
-- [ ] Update `README.md` with project objective, source paper, repository
+- [x] Update `README.md` with project objective, source paper, repository
   structure, quickstart, local run instructions, Docker run instructions, output
   descriptions, and contributor roles.
-- [ ] Add `docs/ai_disclosure.md` stating how AI tools were used, which model
+- [x] Add `docs/ai_disclosure.md` stating how AI tools were used, which model
   was used, and which parts were human-reviewed.
-- [ ] Add source annotations for externally sourced code snippets or formulas.
-- [ ] Add `docs/methodology.md` describing the reproduction method in plain
+- [x] Add source annotations for externally sourced code snippets or formulas.
+- [x] Add `docs/methodology.md` describing the reproduction method in plain
   language.
-- [ ] Add `docs/limitations.md` describing reproducibility gaps, numerical
+- [x] Add `docs/limitations.md` describing reproducibility gaps, numerical
   tolerances, and unresolved differences from the original R outputs.
-- [ ] Ensure the project can be understood by a reviewer after cloning the repo,
+- [x] Ensure the project can be understood by a reviewer after cloning the repo,
   without private local paths or hidden setup steps.
 
 Owners: Jan for README and AI disclosure; Kinga for cross-sectional methodology;
 Iwo for panel methodology.
 
+Jan implementation update, 2026-05-20:
+
+- Reworked `README.md` into the reviewer entry point required by `OUTLINE.md`:
+  project objective, source paper and R references, repository structure,
+  quickstart, local run, Docker run, output descriptions, documentation map,
+  contributor roles, and troubleshooting.
+- Updated `docs/ai_disclosure.md` to state the AI-assisted scope, model used
+  (OpenAI Codex, GPT-5 class coding assistant), human-review responsibility,
+  and the project source-annotation location.
+- Added `docs/methodology.md` describing the source materials, reproduction
+  contract, data preparation, cross-sectional workflow, panel workflow, full
+  pipeline, and result interpretation in reviewer-facing language.
+- Added `docs/limitations.md` covering scope limits, numerical tolerances,
+  cross-sectional differences, panel differences, environment limits, and
+  remaining reviewer caveats.
+- Added `docs/source_annotations.md`, recording that no external code snippets
+  were copied verbatim and annotating the formulas/package APIs used for OLS,
+  diagnostics, correlations, panel models, specification tests, and robust
+  covariance estimates.
+- Added the new static reviewer docs to the project validation contract and
+  added `tests/test_reviewer_documentation.py` to protect the documentation
+  coverage required by `OUTLINE.md`.
+
 ## Phase 9: GitHub Contribution Evidence
 
-- [ ] Each contributor makes commits under their own GitHub identity.
-- [ ] Commit messages are descriptive and imperative, for example `Add panel
+- [x] Each contributor makes commits under their own GitHub identity.
+- [x] Commit messages are descriptive and imperative, for example `Add panel
   fixed-effects reproduction`.
-- [ ] Use branches or pull requests if practical so review history is visible.
-- [ ] Keep final generated outputs, documentation, and code changes organized in
+- [x] Use branches or pull requests if practical so review history is visible.
+- [x] Keep final generated outputs, documentation, and code changes organized in
   reviewable commits.
-- [ ] Before submission, add a contribution summary table to `README.md` or
+- [x] Before submission, add a contribution summary table to `README.md` or
   `docs/contributions.md`.
-- [ ] Verify that GitHub history visibly supports the contribution split claimed
+- [x] Verify that GitHub history visibly supports the contribution split claimed
   in the documentation.
 
 Owners: all contributors.
+
+Jan implementation update, 2026-05-20:
+
+- Added a contributor-role table to `README.md`.
+- Added `docs/contributions.md` with the exact verification command
+  `git log --format='%h %an <%ae> %s' --max-count=40`, the contribution split,
+  recent commit evidence for Jan, Kinga, and Iwo, and final public-history
+  review notes.
+- Verified the local Git history contains authored commits from all three
+  contributors, including Kinga's cross-sectional commits
+  `Add cross-sectional data preparation` and
+  `feat: update dependencies and enhance cross-section analysis`, Iwo's panel
+  commits `Add panel data preparation for Phase 2`,
+  `Add Phase 4 panel reproduction (models, tests, robust SE, alt-FE)`, and
+  `Add Phase 5 panel reproduction results`, and Jan's integration/Docker
+  commits.
+- Added documentation-contract tests that require all three contributors and
+  representative contribution messages to remain visible in
+  `docs/contributions.md`.
 
 ## Phase 10: Presentation Preparation
 
@@ -528,10 +570,10 @@ cross-section; Iwo covers panel.
 - [ ] Fresh Docker build works.
 - [ ] Docker image is pushed to Docker Hub and documented.
 - [ ] `python scripts/run_all.py` regenerates all expected outputs.
-- [ ] README explains the full workflow.
-- [ ] AI disclosure is present.
-- [ ] Contribution summary is present.
+- [x] README explains the full workflow.
+- [x] AI disclosure is present.
+- [x] Contribution summary is present.
 - [ ] Cross-sectional outputs are regenerated in Python.
 - [ ] Panel outputs are regenerated in Python.
-- [ ] Reproduction limitations are documented.
+- [x] Reproduction limitations are documented.
 - [ ] Presentation materials are ready.
