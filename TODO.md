@@ -493,6 +493,9 @@ Kinga reviewer verification update, 2026-05-20:
   the working tree.
 - Kinga's independent Phase 6 reviewer run is complete.
 
+ 
+## Phase 7 
+
 - [x] Format Python code with Black.
 - [x] Lint Python code with Ruff.
 - [x] Keep functions short and explicit where practical.
