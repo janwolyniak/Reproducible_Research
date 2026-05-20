@@ -29,9 +29,17 @@ Run the current reproducibility pipeline:
 python scripts/run_all.py
 ```
 
-At the Phase 1 baseline, `run_all.py` validates the repository, regenerates the
-Phase 0 audit, regenerates the Phase 2 shared data inventory, and writes a
-local run log. Detailed commands are in `docs/run_instructions.md`.
+`run_all.py` validates the repository, regenerates the Phase 0 audit,
+regenerates the Phase 2 data inventory, rebuilds cross-sectional and panel
+tables/figures, refreshes generated reproduction notes, checks the expected
+output set, and writes a local run log. Detailed commands are in
+`docs/run_instructions.md`.
+
+Validate that all regenerated outputs are present:
+
+```bash
+python scripts/validate_project.py --generated-outputs
+```
 
 Regenerate only the data inventory and shared data dictionary:
 

@@ -291,7 +291,7 @@ Owner: Iwo. Reviewer: Jan.
 
 ## Phase 5: Paper-Level Comparison and Results Documentation
 
-- [ ] Create a master results index in `outputs/README.md`.
+- [x] Create a master results index in `outputs/README.md`.
 - [x] Compare regenerated Python outputs against the existing R-generated HTML
   tables and plots. Panel side: side-by-side comparison in
   `docs/panel_reproduction_results.md` covering descriptive stats, FE main,
@@ -300,7 +300,7 @@ Owner: Iwo. Reviewer: Jan.
   `docs/cross_section_reproduction_results.md` covering descriptive stats,
   Spearman tests, OLS tables, institutional alternatives, diagnostics, and
   figures.
-- [ ] Add a table-by-table and figure-by-figure reproduction checklist in
+- [x] Add a table-by-table and figure-by-figure reproduction checklist in
   `docs/reproduction_results.md`. Master file to be stitched by Jan from the
   panel and cross-section sub-documents. Panel checklist already in
   `docs/panel_reproduction_results.md`; cross-section checklist already in
@@ -322,7 +322,7 @@ Owner: Iwo. Reviewer: Jan.
   `docs/cross_section_reproduction_results.md` (insignificant compliance
   coefficients, convergence/control-variable pattern, and institutional
   alternative context).
-- [ ] Ensure all final tables and figures can be regenerated from a clean clone.
+- [x] Ensure all final tables and figures can be regenerated from a clean clone.
 
 Owners: Jan for integration; Kinga for cross-section notes; Iwo for panel notes.
 
@@ -354,6 +354,30 @@ Kinga implementation update, 2026-05-19:
 - The remaining Phase 5 open items are Jan-owned integration tasks:
   `outputs/README.md`, master `docs/reproduction_results.md`, and clean-clone
   final verification.
+
+Jan integration update, 2026-05-20:
+
+- Reworked `outputs/README.md` into the master output index, covering the
+  cross-sectional, panel, intermediate, and log artifacts plus the scripts that
+  regenerate each group.
+- Added `docs/reproduction_results.md` as the stitched Phase 5 master
+  table-by-table and figure-by-figure checklist. It links the cross-section and
+  panel sub-documents, records match statuses, explains documented mismatches,
+  and states the clean-clone regeneration contract.
+- Added `GENERATED_OUTPUT_FILES` and `validate_project(...,
+  generated_outputs=True)` so `python scripts/validate_project.py
+  --generated-outputs` verifies the expected final artifact manifest:
+  regenerated tables, figures, intermediate CSVs, generated docs, Phase 5
+  comparison docs, the output index, and the run summary. `python
+  scripts/run_all.py` now runs this manifest check before returning success.
+- Updated `README.md` and `docs/run_instructions.md` so reviewers can run the
+  full pipeline and the generated-output validation explicitly.
+- Verification passed in the repo-local virtualenv:
+  `.venv/bin/python scripts/run_all.py`,
+  `.venv/bin/python scripts/validate_project.py --generated-outputs`,
+  `.venv/bin/python -m pytest` (`31 passed, 8 existing panel absorbed-variable
+  warnings`), `.venv/bin/python -m ruff check src scripts helpers tests`, and
+  `.venv/bin/python -m black --check src scripts helpers tests`.
 
 ## Phase 6: Docker and Full Reproducibility
 

@@ -77,6 +77,7 @@ def run_all() -> int:
         _run_python_script(PROJECT_ROOT / "scripts" / "inventory_data.py"),
     ]
     log_path = write_run_summary(steps)
+    output_validation = validate_project(generated_outputs=True)
 
     for step in steps:
         if step.stdout:
@@ -84,6 +85,10 @@ def run_all() -> int:
         if step.stderr:
             print(step.stderr, file=sys.stderr, end="")
     print(f"Wrote {log_path.relative_to(PROJECT_ROOT)}")
+    if not output_validation.ok:
+        print(output_validation.render(), file=sys.stderr)
 
     failed = next((s for s in steps if not s.ok), None)
-    return 0 if failed is None else failed.returncode
+    if failed is not None:
+        return failed.returncode
+    return 0 if output_validation.ok else 1

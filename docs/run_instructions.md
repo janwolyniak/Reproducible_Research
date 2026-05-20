@@ -1,8 +1,9 @@
 # Run Instructions
 
-These commands define the current Python entry points for the reproduction.
-Later phases will add the cross-sectional and panel model outputs behind the
-same `scripts/run_all.py` interface.
+These commands define the Python entry points for the reproduction. The full
+pipeline rebuilds the data inventory, cross-sectional outputs, panel outputs,
+and generated reproduction notes behind the same `scripts/run_all.py`
+interface.
 
 ## Local Environment
 
@@ -22,17 +23,28 @@ python scripts/validate_project.py
 The validation command checks the tracked paper, R workflows, processed input
 data, reference R outputs, helper scripts, and expected output directories.
 
-## Run Current Pipeline
+## Run Full Pipeline
 
 ```bash
 python scripts/run_all.py
 ```
 
-At the Phase 1 baseline, this command creates expected output directories,
-validates the project layout, regenerates `docs/phase0_audit.md`, refreshes the
-Phase 2 shared data inventory in `docs/data_inventory.csv` and
-`docs/data_dictionary.md`, and writes a run log to
-`outputs/logs/run_all_summary.txt`.
+This command creates expected output directories, validates the project layout,
+regenerates `docs/phase0_audit.md`, refreshes the Phase 2 data inventory,
+rebuilds the cross-sectional and panel tables/figures, regenerates the
+component reproduction notes, writes `outputs/logs/run_all_summary.txt`, and
+checks that the expected regenerated output files exist.
+
+## Validate Regenerated Outputs
+
+```bash
+python scripts/validate_project.py --generated-outputs
+```
+
+Run this after `python scripts/run_all.py` when checking a fresh clone or a
+submission bundle. It verifies the tracked source inputs, the Phase 5
+comparison documents, and the complete regenerated output set listed in
+`outputs/README.md`.
 
 ## Inventory Source Data
 
