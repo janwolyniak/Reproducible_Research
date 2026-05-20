@@ -430,7 +430,57 @@ Jan implementation update, 2026-05-20:
   `sha256:293c9b92a4a76a1a936fba388188f6ea17c86d4a431269c5c8b2214835fc0ee4`,
   size 856.
 
-## Phase 7: Clean Code and User-Friendly Interface
+Iwo reviewer verification update, 2026-05-20:
+
+- Ran the Phase 6 reviewer Docker workflow on Windows 11, AMD64,
+  Docker Desktop 29.3.1, Linux engine (default platform `linux/amd64`).
+- Confirmed Docker daemon health with `docker info --format "Server Version:
+  {{.ServerVersion}}"` (returned `29.3.1`).
+- Issue found with the published Docker Hub image. `docker pull
+  janwolyniak/reproducible-research-lic-fii:phase6` fails on AMD64 hosts with
+  `no matching manifest for linux/amd64 in the manifest list entries: not
+  found`. `docker manifest inspect` confirms the pushed image only ships
+  `linux/arm64`. This means the reviewer pull command documented in
+  `README.md` will fail on a typical x86_64 lab machine.
+  - Recommended fix for Jan: rebuild and push as multi-arch via Buildx, for
+    example
+    `docker buildx build --platform linux/amd64,linux/arm64 -t
+    janwolyniak/reproducible-research-lic-fii:phase6 --push .`.
+  - Until that push lands, the documented reviewer path is `git clone` +
+    `docker compose run --rm reproduction`, which builds the image locally
+    from the repo Dockerfile and works on AMD64.
+- Local Dockerfile path verified end to end. `docker build -t lic-fii-local:
+  test .` produced a 1.62 GB native AMD64 image without errors.
+- Full pipeline verified via `docker compose run --rm reproduction` (after
+  tagging the local image to satisfy the `image:` field in
+  `docker-compose.yaml`). The container executed `python scripts/run_all.py`
+  to exit code 0. Per-script statuses in `outputs/logs/run_all_summary.txt`:
+  `audit_phase0.py: ok`, `run_panel_prep.py: ok`,
+  `run_cross_section_data.py: ok`, `run_cross_section.py: ok`,
+  `run_panel.py: ok`, `inventory_data.py: ok`.
+- Host-side artifact regeneration confirmed. The compose volume mount wrote
+  the full Phase 3, 4, and 5 artifact manifest back to the host: panel
+  descriptive statistics, Spearman correlation matrix and figure, pooled/
+  between/FD/FE/RE model tables, small full/reduced and main-reduced model
+  tables, specification tests, diagnostic tests, fixed-effects main,
+  fixed-effects compliance categories, plus the cross-sectional descriptive
+  statistics, Spearman tables, OLS variants, diagnostics, VIFs, and figure
+  set, plus the generated reviewer docs and data inventory.
+- Headline panel result reproduced inside the container, matching Phase 4
+  documentation: `log_cc_total` coefficient `+1.74` in the main fixed-effects
+  block with Driscoll-Kraay standard error `0.29`.
+- Only stderr noise was the known `AbsorbingEffectWarning` for `education`
+  in `src/repro_research/panel.py:285`, already documented in Phase 7 as the
+  "existing panel absorbed-variable warnings". No tracebacks, no failed
+  steps, no missing outputs.
+- Side effect to flag before submission: running the documented compose
+  command on a host where `outputs/` is tracked in Git regenerates the
+  numerical tables with slightly different trailing-digit precision than the
+  versions currently committed. The differences are within reproduction
+  tolerance, but the working tree shows ~25 modified CSV/HTML files after a
+  clean container run. Worth deciding whether to commit the freshly
+  regenerated outputs or to revert and keep the existing committed versions
+  before final submission.
 
 - [x] Format Python code with Black.
 - [x] Lint Python code with Ruff.
