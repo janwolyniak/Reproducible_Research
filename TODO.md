@@ -482,6 +482,17 @@ Iwo reviewer verification update, 2026-05-20:
   regenerated outputs or to revert and keep the existing committed versions
   before final submission.
 
+Kinga reviewer verification update, 2026-05-20:
+
+- Ran the documented Phase 6 Docker Compose workflow by composing the
+  reproduction service up and then composing it down.
+- Confirmed that the compose-mounted output files were produced on the host
+  side during the container run.
+- Discarded the regenerated volume-mounted output files afterward so the
+  reviewer verification did not leave unrelated generated-output changes in
+  the working tree.
+- Kinga's independent Phase 6 reviewer run is complete.
+
 - [x] Format Python code with Black.
 - [x] Lint Python code with Ruff.
 - [x] Keep functions short and explicit where practical.
