@@ -392,7 +392,7 @@ Jan integration update, 2026-05-20:
   without local-machine assumptions.
 - [x] Document exact Docker commands in `README.md`, including build, run,
   output location, and troubleshooting.
-- [ ] Build and push the final image to Docker Hub.
+- [x] Build and push the final image to Docker Hub.
 - [x] Record the Docker Hub image name and tag in `README.md`.
 
 Owner: Jan. Reviewers: Kinga and Iwo must independently run the documented
@@ -425,11 +425,10 @@ Jan implementation update, 2026-05-20:
   tests/test_docker_reproducibility.py tests/test_validation.py`,
   `.venv/bin/python -m ruff check src scripts helpers tests`, and
   `.venv/bin/python -m black --check src scripts helpers tests`.
-- Open external step: Docker Hub push was attempted with
-  `docker push janwolyniak/reproducible-research-lic-fii:phase6` and failed
-  with `insufficient_scope: authorization failed`. After logging into a Docker
-  Hub account with write access to `janwolyniak/reproducible-research-lic-fii`,
-  rerun the same push command.
+- Docker Hub push passed on retry:
+  `docker push janwolyniak/reproducible-research-lic-fii:phase6`, digest
+  `sha256:293c9b92a4a76a1a936fba388188f6ea17c86d4a431269c5c8b2214835fc0ee4`,
+  size 856.
 
 ## Phase 7: Clean Code and User-Friendly Interface
 
