@@ -381,22 +381,55 @@ Jan integration update, 2026-05-20:
 
 ## Phase 6: Docker and Full Reproducibility
 
-- [ ] Add a `Dockerfile` that installs Python, system dependencies, project
+- [x] Add a `Dockerfile` that installs Python, system dependencies, project
   dependencies, and any packages required for reading `.rds` files.
-- [ ] Add `docker-compose.yaml` with a service that runs the complete
+- [x] Add `docker-compose.yaml` with a service that runs the complete
   reproduction pipeline.
-- [ ] Add `.dockerignore` to keep the build context small and deterministic.
-- [ ] Make the default container command run the full reproduction or print a
+- [x] Add `.dockerignore` to keep the build context small and deterministic.
+- [x] Make the default container command run the full reproduction or print a
   clear command for doing so.
-- [ ] Verify that a clean Docker build can run `python scripts/run_all.py`
+- [x] Verify that a clean Docker build can run `python scripts/run_all.py`
   without local-machine assumptions.
-- [ ] Document exact Docker commands in `README.md`, including build, run,
+- [x] Document exact Docker commands in `README.md`, including build, run,
   output location, and troubleshooting.
 - [ ] Build and push the final image to Docker Hub.
-- [ ] Record the Docker Hub image name and tag in `README.md`.
+- [x] Record the Docker Hub image name and tag in `README.md`.
 
 Owner: Jan. Reviewers: Kinga and Iwo must independently run the documented
 Docker command before final submission.
+
+Jan implementation update, 2026-05-20:
+
+- Added `Dockerfile` based on `python:3.11-slim`, with scientific-Python build
+  dependencies, non-interactive Python defaults, `MPLBACKEND=Agg`, constrained
+  requirements installation, editable package installation, and default
+  `CMD ["python", "scripts/run_all.py"]`.
+- Added `docker-compose.yaml` with a `reproduction` service that builds and
+  runs `janwolyniak/reproducible-research-lic-fii:phase6`, bind-mounting the
+  checkout at `/app` so regenerated reviewer artifacts are written back to the
+  repository.
+- Added `.dockerignore` excluding local virtual environments, Git metadata,
+  Python caches, test/lint caches, and ignored scratch outputs from the build
+  context.
+- Added `tests/test_docker_reproducibility.py` to lock the Docker default
+  command, compose service image/command, and `.dockerignore` scratch-state
+  exclusions.
+- Updated `README.md` and `docs/run_instructions.md` with exact Docker build,
+  run, compose, output-location, image-tag, pull, and troubleshooting commands.
+- Docker Hub target image/tag:
+  `janwolyniak/reproducible-research-lic-fii:phase6`.
+- Verification passed on 2026-05-20:
+  `docker build -t janwolyniak/reproducible-research-lic-fii:phase6 .`,
+  `docker run --rm janwolyniak/reproducible-research-lic-fii:phase6`,
+  `docker compose config`, `.venv/bin/python -m pytest
+  tests/test_docker_reproducibility.py tests/test_validation.py`,
+  `.venv/bin/python -m ruff check src scripts helpers tests`, and
+  `.venv/bin/python -m black --check src scripts helpers tests`.
+- Open external step: Docker Hub push was attempted with
+  `docker push janwolyniak/reproducible-research-lic-fii:phase6` and failed
+  with `insufficient_scope: authorization failed`. After logging into a Docker
+  Hub account with write access to `janwolyniak/reproducible-research-lic-fii`,
+  rerun the same push command.
 
 ## Phase 7: Clean Code and User-Friendly Interface
 

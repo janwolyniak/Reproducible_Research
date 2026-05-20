@@ -46,3 +46,53 @@ Regenerate only the data inventory and shared data dictionary:
 ```bash
 python scripts/inventory_data.py
 ```
+
+## Docker Reproduction
+
+Build the reviewer image from a clean checkout:
+
+```bash
+docker build -t janwolyniak/reproducible-research-lic-fii:phase6 .
+```
+
+Run the complete reproduction pipeline in the container:
+
+```bash
+docker run --rm janwolyniak/reproducible-research-lic-fii:phase6
+```
+
+The default container command is `python scripts/run_all.py`. It writes the same
+regenerated files under `/app/docs` and `/app/outputs` inside the container.
+To keep regenerated outputs on the host checkout, run the compose service:
+
+```bash
+docker compose run --rm reproduction
+```
+
+The compose service bind-mounts the repository at `/app`, so refreshed files are
+written back to `docs/`, `outputs/cross_section/`, `outputs/panel/`, and the
+ignored scratch directories under `outputs/intermediate/` and `outputs/logs/`.
+
+Docker Hub image name and tag:
+
+```text
+janwolyniak/reproducible-research-lic-fii:phase6
+```
+
+If the image has been pushed, reviewers can run it directly:
+
+```bash
+docker pull janwolyniak/reproducible-research-lic-fii:phase6
+docker run --rm janwolyniak/reproducible-research-lic-fii:phase6
+```
+
+Troubleshooting:
+
+- If Docker cannot connect to the daemon, start Docker Desktop or the local
+  Docker service and rerun the command.
+- If dependency installation fails during `docker build`, rebuild with
+  `--no-cache` to avoid a stale layer:
+  `docker build --no-cache -t janwolyniak/reproducible-research-lic-fii:phase6 .`.
+- If a host-mounted compose run leaves root-owned generated files on Linux, run
+  the plain `docker run --rm ...` command or adjust file ownership after the
+  run.

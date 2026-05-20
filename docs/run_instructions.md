@@ -65,3 +65,53 @@ The existing helper remains available:
 python helpers/rds_to_csv.py cross-section/data --output outputs/intermediate/cross_section_csv
 python helpers/rds_to_csv.py panel/data_panel --output outputs/intermediate/panel_csv
 ```
+
+## Docker Workflow
+
+Build the reproducibility image:
+
+```bash
+docker build -t janwolyniak/reproducible-research-lic-fii:phase6 .
+```
+
+Run the full pipeline with the image default command:
+
+```bash
+docker run --rm janwolyniak/reproducible-research-lic-fii:phase6
+```
+
+The Dockerfile default command is `python scripts/run_all.py`. Container-local
+outputs are written under `/app/docs` and `/app/outputs`.
+
+Use Docker Compose when you want regenerated files written back to the checkout:
+
+```bash
+docker compose run --rm reproduction
+```
+
+The compose service bind-mounts the repository to `/app`, so final outputs land
+in `docs/`, `outputs/cross_section/`, and `outputs/panel/`. Scratch CSVs and run
+logs are regenerated under the ignored `outputs/intermediate/` and
+`outputs/logs/` directories.
+
+The Docker Hub target for the final image is:
+
+```text
+janwolyniak/reproducible-research-lic-fii:phase6
+```
+
+After Jan pushes that tag, reviewers can skip the local build:
+
+```bash
+docker pull janwolyniak/reproducible-research-lic-fii:phase6
+docker run --rm janwolyniak/reproducible-research-lic-fii:phase6
+```
+
+Troubleshooting:
+
+- Start Docker Desktop or the Docker daemon if `docker build` cannot connect.
+- Rebuild with `docker build --no-cache -t janwolyniak/reproducible-research-lic-fii:phase6 .`
+  if a cached dependency layer is stale.
+- On Linux, a compose run may leave host-mounted output files owned by root.
+  Use the plain `docker run --rm ...` command when host ownership matters, or
+  adjust ownership after the run.
