@@ -6,8 +6,9 @@ project scaffolding, path validation, Python ports of the R workflows,
 Docker/reproducibility wiring, test suggestions, and reviewer-facing Markdown
 drafts.
 
-Model used: OpenAI Codex, GPT-5 class coding assistant, accessed through the
-local development environment.
+Models used: OpenAI Codex, GPT-5 class coding assistant, accessed through the
+local development environment; and Anthropic Claude Code, Claude Opus 4.7
+(1M context), accessed through the Claude Code CLI.
 
 Human contributors reviewed the generated code and documentation, compared the
 Python outputs against the thesis, original R workflows, and exported R tables,

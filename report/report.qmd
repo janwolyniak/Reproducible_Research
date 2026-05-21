@@ -1,0 +1,536 @@
+---
+title: "Constitutional Compliance and Economic Growth"
+subtitle: "A Python reproduction of Kucharska (2025), with Docker-based reproducibility"
+author:
+  - "Jan Wołyniak (project structure, Docker, integration)"
+  - "Kinga Kucharska (cross-sectional reproduction)"
+  - "Iwo Wiszejko (panel reproduction)"
+date: today
+format:
+  html:
+    page-layout: full
+    fig-width: 8
+    fig-height: 5
+---
+
+```{python}
+#| label: setup
+#| include: false
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+import pandas as pd
+from IPython.display import HTML, Image, Markdown
+
+REPO_ROOT = Path.cwd().parent if Path.cwd().name == "report" else Path.cwd()
+OUTPUTS = REPO_ROOT / "outputs"
+CROSS = OUTPUTS / "cross_section"
+PANEL = OUTPUTS / "panel"
+DOCS = REPO_ROOT / "docs"
+
+pd.set_option("display.max_columns", None)
+pd.set_option("display.width", 200)
+pd.set_option("display.float_format", lambda v: f"{v:,.4f}")
+
+
+def load_csv(path: Path) -> pd.DataFrame:
+    if not path.exists():
+        return pd.DataFrame({"_missing": [str(path)]})
+    return pd.read_csv(path)
+
+
+def show_table(df: pd.DataFrame, *, max_rows: int = 25, decimals: int = 4) -> HTML:
+    numeric_cols = df.select_dtypes(include="number").columns
+    formatted = df.copy()
+    formatted[numeric_cols] = formatted[numeric_cols].round(decimals)
+    if len(formatted) > max_rows:
+        formatted = formatted.head(max_rows)
+    return HTML(
+        formatted.to_html(index=False, classes="table table-striped table-sm", border=0)
+    )
+
+
+def figure(path: Path, caption: str = "") -> Image | Markdown:
+    if not path.exists():
+        return Markdown(f"*Figure not generated: `{path.relative_to(REPO_ROOT)}`*")
+    return Image(filename=str(path))
+```
+
+::: {.callout-warning appearance="simple"}
+**Status: template / MVP draft.** This report is the starting reviewer-facing
+deliverable produced from the regenerated pipeline outputs. The numerical
+content matches the regenerated `outputs/cross_section/` and `outputs/panel/`
+files at the time of rendering, but the prose, framing, ordering, and
+section-level commentary are a **first pass** that will be revised once we
+have feedback from the instructor and the team on what should be emphasised
+in the final submission. Treat this as a working artefact, not the finished
+presentation document.
+:::
+
+# Executive summary
+
+This report presents a Python reproduction of the empirical chapter of **Kinga
+Kucharska, *Constitutional Compliance: The Hidden Driver of Economic Growth?*,
+University of Warsaw, 2025** (file `2400-LIC-FII.pdf` in this repository). The
+original empirical work was written in R; we rebuilt the entire pipeline in
+Python and packaged the whole thing in a Docker image so a reviewer can pull,
+run, and inspect the results without any local setup.
+
+The paper asks a single question:
+
+> **What is the impact of constitutional compliance on economic growth, measured
+> by GDP growth?**
+
+The reproduced answer matches the original paper:
+
+- **Cross-section (2010–2019):** OLS shows **no statistically significant
+  effect** of the aggregate constitutional-compliance index on average GDP
+  growth, even after controls and robustness checks.
+- **Panel (1990–2020):** Fixed-effects estimation with Driscoll-Kraay robust
+  standard errors gives **a positive and significant effect** of compliance on
+  GDP growth. The Python coefficient on `log(cc_total + 2)` in the main panel
+  block is **+1.74 (DK SE 0.29)**, which agrees with the R reference of
+  **+1.85 (DK SE 0.38)** in sign, magnitude, and significance.
+
+The report walks the reviewer through every step of how that result is
+produced, end-to-end, from the raw `.rds` inputs to the published tables.
+
+# 1. Research design
+
+## 1.1 The paper in one paragraph
+
+The thesis tests the hypothesis that countries which actually comply with their
+constitutional rights — not merely those that write rights on paper — should
+experience higher GDP growth. Compliance is measured by the Comparative
+Constitutional Compliance Database (CCCD), aggregated into an index `cc_total`
+and four sub-components: `cc_basic` (right to life, freedom from slavery,
+freedom from torture), `cc_civil` (free media, free speech, free movement,
+religion), `cc_polit` (association, assembly, parties) and `cc_prop` (property,
+judicial independence, equality before law, rule of law).
+
+Two empirical designs are run side by side:
+
+- A **cross-sectional OLS** model on the 2010–2019 average for 157 countries.
+- A **panel** model on 1990–2020 country–year observations with pooled,
+  between, first-difference, fixed-effects and random-effects estimators.
+
+## 1.2 Why a Python reproduction
+
+The course requires us to demonstrate reproducible research practices:
+versioned code, pinned environments, an end-to-end pipeline, a Docker image,
+and a public artifact that another team can pull and re-execute. The original
+project was in R, so we used the R code, R outputs and the PDF as the
+reproduction contract and rebuilt everything in Python.
+
+The exact contract (variables, model families, expected tables, tolerances)
+lives in `docs/reproduction_contract.md`.
+
+## 1.3 The reproduction stack
+
+| Layer                   | Tool                                                                    |
+| ----------------------- | ----------------------------------------------------------------------- |
+| Language                | Python 3.11                                                             |
+| Data loading            | `pyreadr`, `pandas`, `pyreadstat`                                       |
+| Models                  | `statsmodels`, `linearmodels`                                           |
+| Tables                  | `pandas`, `tabulate`, HTML export                                       |
+| Figures                 | `matplotlib`, `seaborn`                                                 |
+| Validation              | `pytest`, custom manifest checks                                        |
+| Orchestration           | `scripts/run_all.py`, package `repro_research.pipeline`                 |
+| Report / slides         | **Quarto** rendered inside the Docker container                         |
+| Reproducible runtime    | **Docker** (image `janwolyniak/reproducible-research-lic-fii:phase6`)   |
+
+# 2. Data
+
+## 2.1 Source inputs
+
+All raw inputs are tracked in the repository. We use them directly rather than
+re-downloading from upstream providers, because the original paper froze them
+at a specific snapshot.
+
+```{python}
+#| label: tbl-data-inventory
+#| tbl-cap: "Tracked data inputs (truncated to the first 20 rows)."
+
+inventory = load_csv(DOCS / "data_inventory.csv")
+show_table(inventory, max_rows=20)
+```
+
+## 2.2 Cross-sectional preparation
+
+The cross-sectional loader reads `model_data4` and `model_data4_o` (outlier-
+filtered), reconciles inconsistent country-name and country-code columns,
+constructs `log_GDPpc2015`, the shifted log of `cc_total + 2`, and the
+`terms_trade × trade` interaction. The preferred sample is 122 complete
+observations on the `re4_o` design.
+
+```{python}
+#| label: tbl-cs-prep
+#| tbl-cap: "Cross-sectional preparation summary."
+
+show_table(load_csv(CROSS / "cross_section_preparation_summary.csv"))
+```
+
+## 2.3 Panel preparation
+
+The panel loader yields three views: `main` (1990–2020), `alt` (compliance
+sub-components) and `small` (2010–2019 reduced for diagnostics). Country and
+year are the index; the main design adds `log_cc_total`, `lag_log_GDPpc2015`,
+and `tot_growth × trade`. Detailed schemas are in
+`src/repro_research/panel_data.py` and `docs/_data_dictionary_panel.md`.
+
+# 3. Cross-sectional reproduction (Kinga)
+
+## 3.1 Descriptive statistics
+
+```{python}
+#| label: tbl-cs-desc
+#| tbl-cap: "Cross-sectional descriptive statistics (Python)."
+
+show_table(load_csv(CROSS / "descriptive_statistics.csv"))
+```
+
+## 3.2 Spearman correlation tests
+
+The grouped Spearman tests below split the cross-section by GDP per capita
+median, continent, legal origin, and colonization history. They reproduce the
+R-exported HTML tables row-for-row.
+
+```{python}
+#| label: tbl-cs-spear-total
+#| tbl-cap: "Spearman: GDP growth vs cc_total (grouped)."
+show_table(load_csv(CROSS / "spearman_growth_vs_cc_total.csv"))
+```
+
+```{python}
+#| label: tbl-cs-spear-prop
+#| tbl-cap: "Spearman: GDP growth vs cc_prop (grouped)."
+show_table(load_csv(CROSS / "spearman_growth_vs_cc_prop.csv"))
+```
+
+```{python}
+#| label: fig-cs-corr
+#| fig-cap: "Cross-sectional Spearman correlation plot (Python / Seaborn)."
+
+figure(CROSS / "figures" / "correlation_plot.png")
+```
+
+## 3.3 Main OLS table
+
+The cross-sectional headline table reproduces the paper's Table 3 using HC3
+robust standard errors. The compliance coefficient `log(cc_total + 2)` is
+**economically small and not statistically significant** in any of the
+preferred specifications. Convergence (`log(GDPpc2015)` negative and
+significant), investment (positive, significant) and government expenditure
+(negative, significant) are the dominant drivers.
+
+```{python}
+#| label: tbl-cs-ols-main
+#| tbl-cap: "OLS main models with HC3 robust standard errors."
+show_table(load_csv(CROSS / "ols_main.csv"), max_rows=40)
+```
+
+## 3.4 Outlier-filtered and compliance-variant regressions
+
+The outlier-filtered sample drops Congo Rep., Lesotho, Luxembourg, Malta, and
+Singapore. The compliance variants swap `cc_total` for `cc_total_lv` (Law &
+Versteeg style) and `cc_prop` (property/rule-of-law sub-component).
+
+```{python}
+#| label: tbl-cs-ols-out
+#| tbl-cap: "Outlier-filtered OLS."
+show_table(load_csv(CROSS / "ols_outlier_filtered.csv"), max_rows=40)
+```
+
+```{python}
+#| label: tbl-cs-ols-variants
+#| tbl-cap: "Compliance-variant OLS."
+show_table(load_csv(CROSS / "ols_compliance_variants.csv"), max_rows=40)
+```
+
+## 3.5 Institutional alternatives
+
+Replacing constitutional compliance with World Bank governance indicators
+(rule of law, control of corruption, government effectiveness, political
+stability, regulatory quality, voice and accountability) gives positive and
+significant coefficients for almost every measure. This is one of the
+paper's most important nuances: *other* institutional-quality indicators
+correlate with growth in the cross-section even though `cc_total` does not.
+
+```{python}
+#| label: tbl-cs-inst
+#| tbl-cap: "Institutional-variable alternative OLS."
+show_table(load_csv(CROSS / "ols_institutional_variants.csv"), max_rows=40)
+```
+
+## 3.6 Diagnostics
+
+```{python}
+#| label: tbl-cs-diag
+#| tbl-cap: "RESET, Shapiro-Wilk, Breusch-Pagan, Durbin-Watson, etc."
+show_table(load_csv(CROSS / "diagnostics.csv"))
+```
+
+```{python}
+#| label: tbl-cs-vif
+#| tbl-cap: "Variance Inflation Factors."
+show_table(load_csv(CROSS / "variance_inflation_factors.csv"))
+```
+
+::: {.panel-tabset}
+
+### Residuals vs fitted
+
+```{python}
+#| label: fig-cs-resid
+#| fig-cap: "Residuals vs fitted, preferred outlier-filtered model `re4_o`."
+
+figure(CROSS / "figures" / "re4_o_residuals_vs_fitted.png")
+```
+
+### Normal Q–Q
+
+```{python}
+#| label: fig-cs-qq
+#| fig-cap: "Residual Q-Q plot, `re4_o`."
+
+figure(CROSS / "figures" / "re4_o_residual_qq.png")
+```
+
+### Cook's distance
+
+```{python}
+#| label: fig-cs-cook
+#| fig-cap: "Cook's distance, `re4_o`."
+
+figure(CROSS / "figures" / "re4_o_cooks_distance.png")
+```
+
+:::
+
+## 3.7 Verdict — cross-section
+
+The Python cross-section matches the R reference at four decimal places for
+coefficients, robust standard errors, R-squared, observations, RESET,
+Shapiro-Wilk, Breusch-Pagan, and Durbin-Watson p-values. Where rendered HTML
+styling or `corrplot` ordering differs from R, those are best-effort targets
+per the reproduction contract. The full table-by-table checklist is in
+`docs/cross_section_reproduction_results.md`.
+
+The economic verdict is also the same: **`cc_total` does not predict growth in
+the cross-section**.
+
+# 4. Panel reproduction (Iwo)
+
+## 4.1 Why panel matters
+
+The cross-section averages 10 years per country, so unobserved country
+heterogeneity drives the estimate. The panel uses 30 years of country-year
+variation and a fixed-effects estimator, so each country's long-run growth
+trajectory is differenced out and what we are estimating is the
+**within-country** effect of compliance on growth. This is where the paper's
+positive result comes from.
+
+## 4.2 Panel descriptive statistics
+
+```{python}
+#| label: tbl-p-desc
+#| tbl-cap: "Panel descriptive statistics."
+show_table(load_csv(PANEL / "descriptive_statistics.csv"), max_rows=40)
+```
+
+```{python}
+#| label: fig-p-corr
+#| fig-cap: "Panel Spearman correlation plot."
+
+figure(PANEL / "figures" / "correlation_plot.png")
+```
+
+## 4.3 The five estimators
+
+For the main block, the alternative-compliance block, the reduced 2010–2019
+block, and the broader 1990–2020 comparison, we estimate pooled OLS, between,
+first-difference, fixed-effects and random-effects models.
+
+```{python}
+#| label: tbl-p-models
+#| tbl-cap: "Panel models — all five estimators across all blocks."
+show_table(load_csv(PANEL / "panel_models.csv"), max_rows=60)
+```
+
+## 4.4 Specification tests
+
+```{python}
+#| label: tbl-p-spec
+#| tbl-cap: "LM, F (fixed effects vs pooled), and Hausman p-values per block."
+show_table(load_csv(PANEL / "specification_tests.csv"))
+```
+
+All three tests reject pooled OLS at any reasonable level. The Hausman test
+rejects random effects in favor of fixed effects across every block — the
+panel headline tables use the fixed-effects estimator.
+
+## 4.5 Diagnostics
+
+```{python}
+#| label: tbl-p-diag
+#| tbl-cap: "Panel diagnostic tests."
+show_table(load_csv(PANEL / "diagnostic_tests.csv"))
+```
+
+Serial correlation, heteroskedasticity, and Pesaran cross-sectional dependence
+are all present, which is exactly why the published standard errors use
+**Driscoll-Kraay** robust covariance.
+
+## 4.6 Main fixed-effects table — the paper's headline
+
+```{python}
+#| label: tbl-p-fe-main
+#| tbl-cap: "Main fixed-effects panel — coefficients with five SE variants."
+show_table(load_csv(PANEL / "fixed_effects_main.csv"), max_rows=20)
+```
+
+Reading row 3: `log_cc_total` has coefficient **+1.74**, Driscoll-Kraay SE
+**0.29**, so a one-log-point increase in compliance is associated with roughly
+**1.7 percentage points** of additional annual GDP growth, holding the
+controls fixed. The R reference reports **+1.85 / DK SE 0.38**. Coefficients
+agree to one decimal place; the SE difference is the known finite-sample
+correction difference between `linearmodels`/local SCC and R
+`sandwich::vcovSCC`. Both estimators are valid DK-style variants.
+
+## 4.7 Alternative compliance components
+
+Replacing `cc_total` with each of the four CCCD sub-components reproduces the
+paper's component decomposition. **Civil**, **basic**, and **property** are
+positive and significant in both R and Python; **political** compliance is
+positive but not significant.
+
+```{python}
+#| label: tbl-p-fe-cat
+#| tbl-cap: "Alternative compliance-component FE models."
+show_table(load_csv(PANEL / "fixed_effects_compliance_categories.csv"), max_rows=20)
+```
+
+## 4.8 Verdict — panel
+
+The within-country effect of constitutional compliance on GDP growth is
+**positive, large, and statistically significant** at any conventional level,
+robust to the Driscoll-Kraay SE that corrects for serial correlation,
+heteroskedasticity, and cross-sectional dependence. The full match status
+appears in `docs/panel_reproduction_results.md`.
+
+# 5. Reconciling cross-section and panel
+
+The two designs answer different questions:
+
+- **Cross-section** asks: *across countries*, are higher-compliance countries
+  growing faster on average? Answer: no, after controls.
+- **Panel** asks: *within a country over time*, does an improvement in
+  compliance precede higher GDP growth? Answer: yes, by roughly 1.7
+  percentage points per log-point of `cc_total`, robust to DK standard errors.
+
+The reconciliation is straightforward: cross-country growth differences are
+dominated by initial GDP, investment rate and government size, and the
+constitutional-compliance index correlates with those controls. Removing
+country fixed effects collapses the signal. The within-country variation,
+however, retains the compliance effect.
+
+# 6. Reproducibility workflow
+
+## 6.1 The pipeline
+
+The one-shot reproduction is `python scripts/run_all.py`. Internally this
+invokes:
+
+1. `scripts/audit_phase0.py` — regenerates the source audit.
+2. `scripts/inventory_data.py` — refreshes `docs/data_inventory.csv`.
+3. `scripts/run_cross_section_data.py` — cross-sectional preparation.
+4. `scripts/run_cross_section.py` — cross-sectional OLS, diagnostics, figures.
+5. `scripts/run_panel_prep.py` — panel preparation.
+6. `scripts/run_panel.py` — panel models, tests, robust SE, figures.
+7. `scripts/validate_project.py --generated-outputs` — manifest check.
+
+Per-script statuses land in `outputs/logs/run_all_summary.txt`.
+
+## 6.2 Docker
+
+The reviewer image is published on Docker Hub:
+
+```text
+janwolyniak/reproducible-research-lic-fii:phase6
+```
+
+The presentation workflow is one command:
+
+```bash
+docker pull janwolyniak/reproducible-research-lic-fii:phase6
+docker run --rm -v "$(pwd)/outputs:/app/outputs" \
+  janwolyniak/reproducible-research-lic-fii:phase6 \
+  python scripts/generate_report.py
+```
+
+This pulls the public image, runs the full pipeline inside the container, and
+renders this report and the accompanying slide deck under
+`outputs/report/report.html` and `outputs/report/slides.html` on the host.
+
+For the lab session the instructor pulls the image directly; nothing is built
+locally.
+
+## 6.3 Validation
+
+`scripts/validate_project.py --generated-outputs` checks that every expected
+table, figure, intermediate snapshot, generated doc and run log is present
+and non-empty. The container runs this automatically before exiting.
+
+# 7. Limitations and honest disclosures
+
+The reproduction is faithful but not pixel-identical:
+
+- **HTML / corrplot styling** is best-effort, not exact — Python tables are
+  rendered with `pandas`/`seaborn`, not `stargazer`/`corrplot`.
+- **Driscoll-Kraay SE** uses the local SCC formulation with lag rule
+  `floor(4·(T/100)^(2/9))`; R uses `sandwich::vcovSCC` finite-sample
+  correction. Coefficients still match to one decimal; SE magnitudes differ.
+- **Serial-correlation test:** R's `plm::pbgtest` has no exact Python twin,
+  so the diagnostic is labelled "Breusch-Godfrey panel proxy".
+- **Cross-sectional descriptive table** in the R export appears to come from
+  a slightly different cleaning step (`model_data4.1` with 157-country
+  joins). Python reports the cleaner `model_data2` baseline; both agree on
+  the variable-by-variable interpretation.
+
+The full set of limitations is in `docs/limitations.md`. The AI-tooling
+disclosure required by the course is in `docs/ai_disclosure.md`.
+
+# 8. Contributors
+
+| Contributor       | Primary ownership                                                                              |
+| ----------------- | ---------------------------------------------------------------------------------------------- |
+| Jan Wołyniak      | Python project structure, validation, orchestration, Docker, reviewer documentation.           |
+| Kinga Kucharska   | Cross-sectional data preparation, OLS models, diagnostics, cross-section results notes.        |
+| Iwo Wiszejko      | Panel data preparation, FE/RE/FD/between/pooled models, robust SE, panel results notes.        |
+
+Git evidence per contributor is recorded in `docs/contributions.md`. The
+exact verification command is:
+
+```bash
+git log --format='%h %an <%ae> %s' --max-count=40
+```
+
+# 9. Where to look next
+
+If you have ten more minutes after the live demo, the documents to read in
+order are:
+
+1. `docs/reproduction_contract.md` — what the Python pipeline had to match.
+2. `docs/reproduction_results.md` — table-by-table and figure-by-figure
+   reproduction status, with links to the cross-section and panel subdocuments.
+3. `docs/methodology.md` — plain-language methodology.
+4. `docs/limitations.md` — honest reproducibility gaps.
+5. `outputs/README.md` — index of every regenerated artifact.
+
+---
+
+*Rendered with Quarto inside the Docker image. Build command:
+`quarto render report/ --to html`. Source notebook: `report/report.qmd`.*

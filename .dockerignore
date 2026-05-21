@@ -20,3 +20,9 @@ htmlcov
 .coverage.*
 outputs/logs/*
 outputs/intermediate/*
+outputs/report/*
+NEXT_SESSION.md
+.quarto
+report/.quarto
+report/_freeze
+

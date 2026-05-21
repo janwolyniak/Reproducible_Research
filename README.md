@@ -78,42 +78,131 @@ python scripts/run_all.py --skip-plots
 Use `--strict-validation` with `--skip-plots` when the complete output
 manifest should still be required after a plot-skipping run.
 
-## Docker Reproduction
+## Docker Reproduction (presentation workflow)
 
-Build the reviewer image from a clean checkout:
+The project is shipped as a public Docker image on Docker Hub. The image runs
+the full pipeline **and** renders a Quarto report and a Reveal.js slide deck
+that together form the basis of the presentation. The instructor pulls the
+image directly — nothing is built on the lab laptop.
+
+### One-command reviewer workflow
+
+```bash
+docker pull janwolyniak/reproducible-research-lic-fii:phase6
+
+docker run --rm \
+  -v "$(pwd)/outputs:/app/outputs" \
+  janwolyniak/reproducible-research-lic-fii:phase6
+```
+
+After the container exits, open these two files from `outputs/report/`:
+
+| File                          | Purpose                                       |
+| ----------------------------- | --------------------------------------------- |
+| `outputs/report/report.html`  | Full reviewer report (the executable report). |
+| `outputs/report/slides.html`  | Reveal.js slide deck used in the presentation. |
+
+Both files are self-contained HTML (no external assets). Open them in any
+browser.
+
+The default container command is `python scripts/generate_report.py`. It:
+
+1. Validates the project layout and tracked source inputs.
+2. Runs the cross-sectional and panel pipelines (`scripts/run_all.py`).
+3. Validates the regenerated output manifest.
+4. Renders `report/report.qmd` and `report/slides.qmd` with Quarto.
+5. Drops the rendered artefacts into `/app/outputs/report/`.
+
+### Quick smoke test without a host bind
+
+If you only want to confirm that the container can pull, install, run the
+pipeline, and render the report end-to-end (without writing the report back to
+the host), run:
+
+```bash
+docker run --rm janwolyniak/reproducible-research-lic-fii:phase6
+```
+
+This is the shortest possible reviewer command. The rendered artefacts stay
+inside the container layer; the container exit code (0 / non-zero) tells you
+whether the full pipeline + render succeeded.
+
+### Locally building the image (optional)
 
 ```bash
 docker build -t janwolyniak/reproducible-research-lic-fii:phase6 .
 ```
 
-Run the complete reproduction pipeline in the container:
+The Dockerfile installs Quarto (matching the host architecture) on top of the
+Python scientific stack, so a single image produces both the analysis and the
+rendered report.
 
-```bash
-docker run --rm janwolyniak/reproducible-research-lic-fii:phase6
-```
-
-The default container command is `python scripts/run_all.py`. It writes the same
-regenerated files under `/app/docs` and `/app/outputs` inside the container.
-
-Use Docker Compose when regenerated files should be written back to the host
-checkout:
+### Compose (when more than just the report needs to land on the host)
 
 ```bash
 docker compose run --rm reproduction
 ```
 
-The final Docker Hub image is:
+The compose service bind-mounts the whole repository to `/app`, so every
+regenerated CSV, HTML table, and figure (not just the report) is written back
+to the host checkout.
+
+### Published image
 
 ```text
 janwolyniak/reproducible-research-lic-fii:phase6
 ```
 
-If the image is already pushed, reviewers can run:
+> **Note for the reviewer.** The image is built and pushed by Jan Wołyniak.
+> Please pull from Docker Hub rather than rebuilding locally during the lab
+> session — the pull is the workflow that is graded.
+
+## Presentation
+
+> **Status: template / MVP draft.** The presentation materials below — both
+> slide decks, both speaking scripts, the demo helper, and the structure of
+> this section itself — are a **first pass**. They were prepared before the
+> group meeting that will decide presentation format (option A vs B), final
+> timing per speaker, and any feedback we still expect from the instructor.
+> Everything in this section will be revised before the actual lab session.
+> Treat the current content as a starting baseline to iterate from, not as
+> finished material.
+
+The 20-minute presentation (Reproducible Research course, 2026 summer term) is
+driven by the same Docker image. The on-laptop demo is:
 
 ```bash
 docker pull janwolyniak/reproducible-research-lic-fii:phase6
-docker run --rm janwolyniak/reproducible-research-lic-fii:phase6
+docker run --rm -v "$(pwd)/outputs:/app/outputs" \
+  janwolyniak/reproducible-research-lic-fii:phase6
 ```
+
+After the container exits, three artefacts are ready under
+`outputs/report/`:
+
+- `report.html` — the full reviewer report (step-by-step narrative).
+- `slides.html` — technical Reveal.js deck (embedded tables, code).
+- `slides_visual.html` — visual PPTX-style deck (big numbers, narrative).
+
+Two presentation options are documented:
+
+- [`docs/presentation/option_A_hybrid.md`](docs/presentation/option_A_hybrid.md) —
+  technical slide deck driving the narrative, with three planned drilldowns
+  into the full report.
+- [`docs/presentation/option_B_visual.md`](docs/presentation/option_B_visual.md) —
+  visual slide deck paired with Jan running `python scripts/demo.py` and the
+  Docker pipeline live from a PowerShell terminal.
+
+Shared per-block speaker text, anticipated Q&A, and the demo failover plan
+live in [`docs/presentation/speaking_script.md`](docs/presentation/speaking_script.md).
+
+The Quarto sources are:
+
+- `report/report.qmd` — the full reviewer report.
+- `report/slides.qmd` — the technical Reveal.js deck (option A).
+- `report/slides_visual.qmd` — the visual Reveal.js deck (option B).
+- `report/_quarto.yml` — Quarto project config.
+- `scripts/demo.py` — terminal-side helper for option B.
 
 ## Output Descriptions
 

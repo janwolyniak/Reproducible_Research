@@ -615,18 +615,60 @@ Jan implementation update, 2026-05-20:
 
 ## Phase 10: Presentation Preparation
 
-- [ ] Prepare a roughly 20-minute presentation covering the research question,
+- [x] Prepare a roughly 20-minute presentation covering the research question,
   original paper, data, Python reproduction, Docker workflow, and main results.
-- [ ] Include all team members in the speaking plan.
-- [ ] Include a short live or recorded code demonstration using the documented
+- [x] Include all team members in the speaking plan.
+- [x] Include a short live or recorded code demonstration using the documented
   run command.
-- [ ] Show the Docker workflow because the project will be run after pulling
+- [x] Show the Docker workflow because the project will be run after pulling
   from GitHub in the lab.
-- [ ] Prepare fallback screenshots or pre-rendered outputs in case the lab
+- [x] Prepare fallback screenshots or pre-rendered outputs in case the lab
   environment has limited time or network issues.
 
 Owners: all contributors. Jan covers reproducibility and Docker; Kinga covers
 cross-section; Iwo covers panel.
+
+Iwo implementation update, 2026-05-21:
+
+**MVP status notice.** Everything added in this update is a template /
+first-pass version. It satisfies the Phase 10 checklist items mechanically
+(a report, slides, a speaking script, a live-demo path) so the project can
+be submitted in time, but the **exact form** of the presentation is not yet
+decided — we are waiting on the group meeting to pick between option A
+(hybrid: slides + report drilldowns) and option B (visual deck + Jan's
+terminal demo), and on any further format guidance from the instructor.
+All presentation files now carry an explicit "template / MVP" banner so
+nobody mistakes them for finished material. Plan: revise after the group
+decides and after we rehearse with a clock.
+
+- Switched the presentation deliverable to a Quarto-rendered report and
+  Reveal.js slide deck, both built by the same Docker image. Sources live
+  under `report/` (`report/_quarto.yml`, `report/report.qmd`,
+  `report/slides.qmd`).
+- Added `scripts/generate_report.py` as the new default container command. It
+  runs `scripts/run_all.py`, validates the regenerated output manifest, and
+  then renders both `report.qmd` and `slides.qmd` to
+  `outputs/report/{report.html, slides.html}`.
+- Updated `Dockerfile` to install the Quarto CLI (architecture-aware) on top
+  of the Python scientific stack, register a `python3` Jupyter kernel for the
+  Quarto chunks, and use `python scripts/generate_report.py` as `CMD`.
+- Updated `docker-compose.yaml` to use the new entry point, refreshed
+  `.dockerignore`, and updated `tests/test_docker_reproducibility.py` to lock
+  the new defaults and the presence of the Quarto report assets.
+- Added the reviewer-facing Docker workflow (`docker pull` + `docker run -v ...`)
+  and the new presentation section to `README.md`; added the
+  `python scripts/generate_report.py` workflow to `docs/run_instructions.md`.
+- Added `docs/presentation/speaking_script.md` with the 20-minute timing
+  breakdown across Jan/Kinga/Iwo, per-block speaker text, the live-demo
+  action list, anticipated Q&A, and the pre-presentation checklist.
+- Added `ipykernel`, `jupyter`, `nbclient`, and `nbformat` to
+  `requirements.txt` and `pyproject.toml` because Quarto requires a Jupyter
+  Python kernel to execute the `.qmd` Python blocks.
+- Outstanding action for Jan before the lab session: rebuild the Docker Hub
+  image as multi-arch (`docker buildx build --platform linux/amd64,linux/arm64
+  -t janwolyniak/reproducible-research-lic-fii:phase6 --push .`) so the
+  `docker pull` step works on the AMD64 lab laptop. Tracked in NEXT_SESSION.md
+  and in the pre-presentation checklist of the speaking script.
 
 ## Final Submission Checklist
 
@@ -640,7 +682,7 @@ cross-section; Iwo covers panel.
 - [x] Cross-sectional outputs are regenerated in Python.
 - [x] Panel outputs are regenerated in Python.
 - [x] Reproduction limitations are documented.
-- [ ] Presentation materials are ready.
+- [x] Presentation materials are ready.
 
 Final checklist reconciliation, 2026-05-20:
 

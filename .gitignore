@@ -83,3 +83,6 @@ outputs/logs/*
 outputs/intermediate/*
 !outputs/intermediate/
 !outputs/intermediate/.gitkeep
+outputs/report/*
+!outputs/report/
+!outputs/report/.gitkeep

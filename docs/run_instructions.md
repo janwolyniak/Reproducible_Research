@@ -46,6 +46,25 @@ does not run the complete generated-output manifest check by default. Add
 `--strict-validation` when you intentionally want that full manifest check after
 a plot-skipping run.
 
+## Generate the Presentation Report
+
+The reviewer-facing report and slide deck are built with Quarto from
+`report/report.qmd` and `report/slides.qmd`. The orchestrator runs the full
+pipeline first, then renders both outputs to `outputs/report/`:
+
+```bash
+python scripts/generate_report.py
+```
+
+Useful flags:
+
+- `--skip-pipeline` — re-render the report without rerunning the analysis.
+- `--report-only` / `--slides-only` — render just one of the two targets.
+- `--skip-plots` / `--strict-validation` — forwarded to the pipeline step.
+
+Quarto must be available on `PATH`. The Docker image ships Quarto, so the
+zero-setup path is to run this script inside the container (see below).
+
 ## Component Output Directories
 
 The cross-sectional and panel entry points can write to alternate review
@@ -99,25 +118,30 @@ Build the reproducibility image:
 docker build -t janwolyniak/reproducible-research-lic-fii:phase6 .
 ```
 
-Run the full pipeline with the image default command:
+Run the full pipeline **and** render the presentation report with the image
+default command:
 
 ```bash
-docker run --rm janwolyniak/reproducible-research-lic-fii:phase6
+docker run --rm -v "$(pwd)/outputs:/app/outputs" \
+  janwolyniak/reproducible-research-lic-fii:phase6
 ```
 
-The Dockerfile default command is `python scripts/run_all.py`. Container-local
-outputs are written under `/app/docs` and `/app/outputs`.
+The Dockerfile default command is `python scripts/generate_report.py`. It runs
+the full analysis, validates the manifest, and writes the report and slides
+to `/app/outputs/report/` — bind-mounted back to `./outputs/report/` on the
+host.
 
-Use Docker Compose when you want regenerated files written back to the checkout:
+Use Docker Compose when you want every regenerated file (not just the report)
+written back to the checkout:
 
 ```bash
 docker compose run --rm reproduction
 ```
 
 The compose service bind-mounts the repository to `/app`, so final outputs land
-in `docs/`, `outputs/cross_section/`, and `outputs/panel/`. Scratch CSVs and run
-logs are regenerated under the ignored `outputs/intermediate/` and
-`outputs/logs/` directories.
+in `docs/`, `outputs/cross_section/`, `outputs/panel/`, and
+`outputs/report/`. Scratch CSVs and run logs are regenerated under the ignored
+`outputs/intermediate/` and `outputs/logs/` directories.
 
 The Docker Hub target for the final image is:
 
@@ -129,8 +153,15 @@ After Jan pushes that tag, reviewers can skip the local build:
 
 ```bash
 docker pull janwolyniak/reproducible-research-lic-fii:phase6
-docker run --rm janwolyniak/reproducible-research-lic-fii:phase6
+docker run --rm -v "$(pwd)/outputs:/app/outputs" \
+  janwolyniak/reproducible-research-lic-fii:phase6
 ```
+
+The pulled image runs the analysis and renders the report end-to-end. The two
+artefacts to open after the run are:
+
+- `outputs/report/report.html` — full reviewer report.
+- `outputs/report/slides.html` — Reveal.js deck used in the presentation.
 
 Troubleshooting:
 

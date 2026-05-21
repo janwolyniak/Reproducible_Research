@@ -1,0 +1,33 @@
+project:
+  type: default
+  render:
+    - report.qmd
+    - slides.qmd
+    - slides_visual.qmd
+
+execute:
+  freeze: false
+  echo: false
+  warning: false
+  message: false
+
+format:
+  html:
+    theme:
+      light: cosmo
+      dark: darkly
+    toc: true
+    toc-depth: 3
+    toc-location: left
+    code-fold: true
+    code-tools: true
+    code-overflow: wrap
+    df-print: paged
+    embed-resources: true
+    smooth-scroll: true
+    fig-align: center
+    fig-cap-location: bottom
+    tbl-cap-location: top
+    title-block-banner: true
+    link-external-newwindow: true
+    citations-hover: true

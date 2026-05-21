@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     image: janwolyniak/reproducible-research-lic-fii:phase6
-    command: python scripts/run_all.py
+    command: python scripts/generate_report.py
     environment:
       MPLBACKEND: Agg
     volumes:
