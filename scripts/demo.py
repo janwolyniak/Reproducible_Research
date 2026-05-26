@@ -130,8 +130,8 @@ def main() -> int:
 
     _banner("One command regenerated all of the above:  python scripts/run_all.py")
     print(
-        "  Inside Docker:  docker run --rm -v $(pwd)/outputs:/app/outputs \\\n"
-        "                      janwolyniak/reproducible-research-lic-fii:phase6"
+        "  Inside Docker:  docker run --rm -v $(pwd)/outputs/report:/app/outputs/report \\\n"
+        "                      janwolyniak/reproducible-research-lic-fii"
     )
     print()
     return 0

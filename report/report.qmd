@@ -59,15 +59,11 @@ def figure(path: Path, caption: str = "") -> Image | Markdown:
     return Image(filename=str(path))
 ```
 
-::: {.callout-warning appearance="simple"}
-**Status: template / MVP draft.** This report is the starting reviewer-facing
-deliverable produced from the regenerated pipeline outputs. The numerical
-content matches the regenerated `outputs/cross_section/` and `outputs/panel/`
-files at the time of rendering, but the prose, framing, ordering, and
-section-level commentary are a **first pass** that will be revised once we
-have feedback from the instructor and the team on what should be emphasised
-in the final submission. Treat this as a working artefact, not the finished
-presentation document.
+::: {.callout-note appearance="simple"}
+This report is generated inside the Docker image after the full analysis
+pipeline finishes. For the live presentation, use the exported notebook report
+`outputs/report/final_presentation_report.html` as the step-by-step walkthrough
+and keep this page open for deeper table and figure drilldowns.
 :::
 
 # Executive summary
@@ -139,8 +135,9 @@ lives in `docs/reproduction_contract.md`.
 | Figures                 | `matplotlib`, `seaborn`                                                 |
 | Validation              | `pytest`, custom manifest checks                                        |
 | Orchestration           | `scripts/run_all.py`, package `repro_research.pipeline`                 |
-| Report / slides         | **Quarto** rendered inside the Docker container                         |
-| Reproducible runtime    | **Docker** (image `janwolyniak/reproducible-research-lic-fii:phase6`)   |
+| Main presentation report | **Jupyter notebook** executed and exported inside the Docker container  |
+| Full report / slides    | **Quarto** rendered inside the Docker container                         |
+| Reproducible runtime    | **Docker** (image `janwolyniak/reproducible-research-lic-fii`)   |
 
 # 2. Data
 
@@ -459,21 +456,21 @@ Per-script statuses land in `outputs/logs/run_all_summary.txt`.
 The reviewer image is published on Docker Hub:
 
 ```text
-janwolyniak/reproducible-research-lic-fii:phase6
+janwolyniak/reproducible-research-lic-fii
 ```
 
 The presentation workflow is one command:
 
 ```bash
-docker pull janwolyniak/reproducible-research-lic-fii:phase6
-docker run --rm -v "$(pwd)/outputs:/app/outputs" \
-  janwolyniak/reproducible-research-lic-fii:phase6 \
-  python scripts/generate_report.py
+docker pull janwolyniak/reproducible-research-lic-fii
+mkdir -p outputs/report
+docker run --rm -v "$(pwd)/outputs/report:/app/outputs/report" \
+  janwolyniak/reproducible-research-lic-fii
 ```
 
 This pulls the public image, runs the full pipeline inside the container, and
-renders this report and the accompanying slide deck under
-`outputs/report/report.html` and `outputs/report/slides.html` on the host.
+renders the notebook report, this full report, and the accompanying slide decks
+under `outputs/report/` on the host.
 
 For the lab session the instructor pulls the image directly; nothing is built
 locally.
@@ -532,5 +529,6 @@ order are:
 
 ---
 
-*Rendered with Quarto inside the Docker image. Build command:
-`quarto render report/ --to html`. Source notebook: `report/report.qmd`.*
+*Rendered with Quarto inside the Docker image. The primary presentation
+notebook is `notebooks/final_presentation_report.ipynb`; this full report
+source is `report/report.qmd`.*

@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: janwolyniak/reproducible-research-lic-fii:phase6
+    image: janwolyniak/reproducible-research-lic-fii
     command: python scripts/generate_report.py
     environment:
       MPLBACKEND: Agg

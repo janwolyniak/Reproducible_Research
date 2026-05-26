@@ -1,17 +1,10 @@
-# Option A — Hybrid: slides + 3 report drilldowns
+# Option A — Hybrid: notebook report + 3 slide/report drilldowns
 
-> **Status: template / MVP draft.** This document is one of two competing
-> options for the presentation format (option B is in
-> `option_B_visual.md`). It was prepared before the group decided which
-> option to use, before final feedback from Kozubowski, and before any
-> rehearsal. **All content — drilldown moments, exact wording, timings,
-> setup steps — will be revised** once the group picks an option and
-> rehearses it. Use this as a starting structure to iterate from.
-
-The technical Reveal.js deck (`outputs/report/slides.html`) drives the
-narrative. At three specific moments, the speaker switches to the full
-report (`outputs/report/report.html`) to show a longer table, a code block,
-or a piece of prose. After the drilldown, we return to the slides.
+The executable notebook report (`outputs/report/final_presentation_report.html`)
+drives the narrative. At three specific moments, the speaker switches to the
+short Reveal.js deck (`outputs/report/slides.html`) or the full report
+(`outputs/report/report.html`) to show a cleaner slide or longer evidence
+table. After the drilldown, we return to the notebook report.
 
 This is the option for a team that wants **slide-paced presentation flow**
 with **report-grade evidence** available on demand. The full speaking
@@ -20,14 +13,11 @@ and the version-A logistics.
 
 ## Setup before walking into the room
 
-1. Lab laptop has the cloned repo and the pre-rendered
-   `outputs/report/{report.html, slides.html}` next to it.
+1. Run the public Docker image with the README command.
 2. Browser open on **two windows side by side**:
-   - Left: `outputs/report/slides.html` (presentation mode, F11).
-   - Right: `outputs/report/report.html` (long report, ready to scroll).
-3. Two `Win`+`←` / `Win`+`→` snaps so Jan can switch quickly.
-4. Terminal opened in `C:\Users\1\Downloads\Reproducible_Research` for the
-   Docker live demo.
+   - Left: `outputs/report/final_presentation_report.html`.
+   - Right: `outputs/report/slides.html`, with `report.html` ready as fallback.
+3. Terminal remains visible enough to show the completed Docker command.
 
 ## Timing (matches the existing speaking script)
 

@@ -405,7 +405,7 @@ Jan implementation update, 2026-05-20:
   requirements installation, editable package installation, and default
   `CMD ["python", "scripts/run_all.py"]`.
 - Added `docker-compose.yaml` with a `reproduction` service that builds and
-  runs `janwolyniak/reproducible-research-lic-fii:phase6`, bind-mounting the
+  runs `janwolyniak/reproducible-research-lic-fii`, bind-mounting the
   checkout at `/app` so regenerated reviewer artifacts are written back to the
   repository.
 - Added `.dockerignore` excluding local virtual environments, Git metadata,
@@ -417,16 +417,16 @@ Jan implementation update, 2026-05-20:
 - Updated `README.md` and `docs/run_instructions.md` with exact Docker build,
   run, compose, output-location, image-tag, pull, and troubleshooting commands.
 - Docker Hub target image/tag:
-  `janwolyniak/reproducible-research-lic-fii:phase6`.
+  `janwolyniak/reproducible-research-lic-fii`.
 - Verification passed on 2026-05-20:
-  `docker build -t janwolyniak/reproducible-research-lic-fii:phase6 .`,
-  `docker run --rm janwolyniak/reproducible-research-lic-fii:phase6`,
+  `docker build -t janwolyniak/reproducible-research-lic-fii .`,
+  `docker run --rm janwolyniak/reproducible-research-lic-fii`,
   `docker compose config`, `.venv/bin/python -m pytest
   tests/test_docker_reproducibility.py tests/test_validation.py`,
   `.venv/bin/python -m ruff check src scripts helpers tests`, and
   `.venv/bin/python -m black --check src scripts helpers tests`.
 - Docker Hub push passed on retry:
-  `docker push janwolyniak/reproducible-research-lic-fii:phase6`, digest
+  `docker push janwolyniak/reproducible-research-lic-fii`, digest
   `sha256:293c9b92a4a76a1a936fba388188f6ea17c86d4a431269c5c8b2214835fc0ee4`,
   size 856.
 
@@ -437,7 +437,7 @@ Iwo reviewer verification update, 2026-05-20:
 - Confirmed Docker daemon health with `docker info --format "Server Version:
   {{.ServerVersion}}"` (returned `29.3.1`).
 - Issue found with the published Docker Hub image. `docker pull
-  janwolyniak/reproducible-research-lic-fii:phase6` fails on AMD64 hosts with
+  janwolyniak/reproducible-research-lic-fii` fails on AMD64 hosts with
   `no matching manifest for linux/amd64 in the manifest list entries: not
   found`. `docker manifest inspect` confirms the pushed image only ships
   `linux/arm64`. This means the reviewer pull command documented in
@@ -445,7 +445,7 @@ Iwo reviewer verification update, 2026-05-20:
   - Recommended fix for Jan: rebuild and push as multi-arch via Buildx, for
     example
     `docker buildx build --platform linux/amd64,linux/arm64 -t
-    janwolyniak/reproducible-research-lic-fii:phase6 --push .`.
+    janwolyniak/reproducible-research-lic-fii --push .`.
   - Until that push lands, the documented reviewer path is `git clone` +
     `docker compose run --rm reproduction`, which builds the image locally
     from the repo Dockerfile and works on AMD64.
@@ -666,7 +666,7 @@ decides and after we rehearse with a clock.
   Python kernel to execute the `.qmd` Python blocks.
 - Outstanding action for Jan before the lab session: rebuild the Docker Hub
   image as multi-arch (`docker buildx build --platform linux/amd64,linux/arm64
-  -t janwolyniak/reproducible-research-lic-fii:phase6 --push .`) so the
+  -t janwolyniak/reproducible-research-lic-fii --push .`) so the
   `docker pull` step works on the AMD64 lab laptop. Tracked in NEXT_SESSION.md
   and in the pre-presentation checklist of the speaking script.
 
@@ -690,11 +690,11 @@ Final checklist reconciliation, 2026-05-20:
   documented local commands, generated-output validation, and full
   `.venv/bin/python scripts/run_all.py` execution passed.
 - Fresh Docker build and run are covered by Phase 6 verification:
-  `docker build -t janwolyniak/reproducible-research-lic-fii:phase6 .`,
-  `docker run --rm janwolyniak/reproducible-research-lic-fii:phase6`, and
+  `docker build -t janwolyniak/reproducible-research-lic-fii .`,
+  `docker run --rm janwolyniak/reproducible-research-lic-fii`, and
   `docker compose config` passed.
 - Docker Hub publication is documented in Phase 6 and `README.md`; the pushed
-  image is `janwolyniak/reproducible-research-lic-fii:phase6` with digest
+  image is `janwolyniak/reproducible-research-lic-fii` with digest
   `sha256:293c9b92a4a76a1a936fba388188f6ea17c86d4a431269c5c8b2214835fc0ee4`.
 - The latest Phase 8/9 verification reran
   `.venv/bin/python scripts/run_all.py --skip-plots --strict-validation` and

@@ -32,7 +32,7 @@ def test_readme_covers_outline_reviewer_requirements() -> None:
         "docs/ai_disclosure.md",
         "docs/contributions.md",
         "python scripts/run_all.py",
-        "docker run --rm janwolyniak/reproducible-research-lic-fii:phase6",
+        "docker run --rm janwolyniak/reproducible-research-lic-fii",
     ]
     for reference in expected_references:
         assert reference in readme

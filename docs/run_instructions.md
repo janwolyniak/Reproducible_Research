@@ -48,9 +48,10 @@ a plot-skipping run.
 
 ## Generate the Presentation Report
 
-The reviewer-facing report and slide deck are built with Quarto from
-`report/report.qmd` and `report/slides.qmd`. The orchestrator runs the full
-pipeline first, then renders both outputs to `outputs/report/`:
+The reviewer-facing artifacts are built by `scripts/generate_report.py`. The
+orchestrator runs the full pipeline first, validates the generated outputs,
+renders the Quarto report/decks, then executes and exports
+`notebooks/final_presentation_report.ipynb` to `outputs/report/`:
 
 ```bash
 python scripts/generate_report.py
@@ -60,10 +61,13 @@ Useful flags:
 
 - `--skip-pipeline` — re-render the report without rerunning the analysis.
 - `--report-only` / `--slides-only` — render just one of the two targets.
+- `--skip-notebook` — skip the executable notebook export.
 - `--skip-plots` / `--strict-validation` — forwarded to the pipeline step.
 
-Quarto must be available on `PATH`. The Docker image ships Quarto, so the
-zero-setup path is to run this script inside the container (see below).
+Quarto must be available on `PATH` for the Quarto artifacts. The notebook
+export uses the Jupyter dependencies in `requirements.txt`. The Docker image
+ships both Quarto and the notebook dependencies, so the zero-setup path is to
+run this script inside the container (see below).
 
 ## Component Output Directories
 
@@ -112,24 +116,63 @@ python helpers/rds_to_csv.py panel/data_panel --output outputs/intermediate/pane
 
 ## Docker Workflow
 
-Build the reproducibility image:
+The final presentation path is pull-run-open. The instructor pulls the public
+Docker Hub image directly and does not build locally:
 
 ```bash
-docker build -t janwolyniak/reproducible-research-lic-fii:phase6 .
+docker pull janwolyniak/reproducible-research-lic-fii
+mkdir -p outputs/report
+docker run --rm -v "$(pwd)/outputs/report:/app/outputs/report" \
+  janwolyniak/reproducible-research-lic-fii
 ```
 
-Run the full pipeline **and** render the presentation report with the image
-default command:
+PowerShell:
 
-```bash
-docker run --rm -v "$(pwd)/outputs:/app/outputs" \
-  janwolyniak/reproducible-research-lic-fii:phase6
+```powershell
+docker pull janwolyniak/reproducible-research-lic-fii
+mkdir outputs
+mkdir outputs/report
+docker run --rm `
+  -v "${PWD}/outputs/report:/app/outputs/report" `
+  janwolyniak/reproducible-research-lic-fii
 ```
 
 The Dockerfile default command is `python scripts/generate_report.py`. It runs
-the full analysis, validates the manifest, and writes the report and slides
-to `/app/outputs/report/` — bind-mounted back to `./outputs/report/` on the
-host.
+the full analysis, validates the manifest, and writes the report artifacts
+to `/app/outputs/report/`, which is bind-mounted back to
+`./outputs/report/` on the host. The intermediate regenerated analysis outputs
+remain inside the container unless you use the compose workflow below.
+
+Open these files after the run:
+
+- `outputs/report/final_presentation_report.html` — main step-by-step notebook
+  report for the presentation.
+- `outputs/report/slides.html` — short Reveal.js deck.
+- `outputs/report/report.html` — full reviewer report.
+- `outputs/report/slides_visual.html` — visual backup deck.
+
+## Docker Image Maintenance
+
+Build and push the public reproducibility image:
+
+```bash
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t janwolyniak/reproducible-research-lic-fii \
+  --push .
+```
+
+The image must remain public on Docker Hub and must not contain secrets.
+This project needs no API keys at runtime. `.dockerignore` excludes local
+virtual environments, git metadata, caches, logs, generated report outputs,
+`.env` files, key files, token files, and secret folders.
+
+Quick image smoke test after pushing:
+
+```bash
+docker pull janwolyniak/reproducible-research-lic-fii
+docker run --rm janwolyniak/reproducible-research-lic-fii
+```
 
 Use Docker Compose when you want every regenerated file (not just the report)
 written back to the checkout:
@@ -143,30 +186,10 @@ in `docs/`, `outputs/cross_section/`, `outputs/panel/`, and
 `outputs/report/`. Scratch CSVs and run logs are regenerated under the ignored
 `outputs/intermediate/` and `outputs/logs/` directories.
 
-The Docker Hub target for the final image is:
-
-```text
-janwolyniak/reproducible-research-lic-fii:phase6
-```
-
-After Jan pushes that tag, reviewers can skip the local build:
-
-```bash
-docker pull janwolyniak/reproducible-research-lic-fii:phase6
-docker run --rm -v "$(pwd)/outputs:/app/outputs" \
-  janwolyniak/reproducible-research-lic-fii:phase6
-```
-
-The pulled image runs the analysis and renders the report end-to-end. The two
-artefacts to open after the run are:
-
-- `outputs/report/report.html` — full reviewer report.
-- `outputs/report/slides.html` — Reveal.js deck used in the presentation.
-
 Troubleshooting:
 
 - Start Docker Desktop or the Docker daemon if `docker build` cannot connect.
-- Rebuild with `docker build --no-cache -t janwolyniak/reproducible-research-lic-fii:phase6 .`
+- Rebuild with `docker build --no-cache -t janwolyniak/reproducible-research-lic-fii .`
   if a cached dependency layer is stale.
 - On Linux, a compose run may leave host-mounted output files owned by root.
   Use the plain `docker run --rm ...` command when host ownership matters, or
