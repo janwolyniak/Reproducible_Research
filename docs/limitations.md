@@ -1,8 +1,7 @@
 # Limitations
 
 This document records the reproducibility gaps, numerical-tolerance policy, and
-unresolved differences from the original R outputs. The detailed
-table-by-table status is in `docs/reproduction_results.md`.
+unresolved differences from the original R outputs.
 
 ## Scope Limits
 
@@ -38,8 +37,7 @@ document records a specific exception:
 - The `model_data4.rds` input lacks the `tot2` column while
   `model_data4_o.rds` contains it. The Python loader exposes a canonical
   `terms_trade` variable, using `tot2` when available and falling back to `tot`
-  otherwise. This decision is documented in the cross-sectional reproduction
-  notes.
+  otherwise.
 - The outlier-filtered workflow follows the tracked `model_data4_o.rds`
   dataset and the confirmed five-country exclusion rule: Congo, Rep.; Lesotho;
   Luxembourg; Malta; and Singapore.
@@ -55,7 +53,7 @@ document records a specific exception:
   not an exact same-test reproduction.
 - Some fixed-effects specifications absorb variables after country and year
   effects are included. The Python implementation keeps those warnings visible
-  in tests and result notes rather than hiding the model-identification issue.
+  rather than hiding the model-identification issue.
 - Cross-sectional dependence diagnostics use a Python implementation of the
   Pesaran CD logic and can differ in small-sample details from R packages.
 

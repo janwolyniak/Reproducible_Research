@@ -50,14 +50,6 @@ python scripts/validate_project.py --generated-outputs
 | `outputs/intermediate/panel/{main,alt,small}.csv` | Prepared panel caches for inspection. | `scripts/run_panel_prep.py` |
 | `outputs/logs/run_all_summary.txt` | Local run log for the latest full pipeline execution. | `scripts/run_all.py` |
 
-## Comparison Documents
-
-The table-by-table and figure-by-figure reproduction status is documented in:
-
-- `docs/reproduction_results.md`
-- `docs/cross_section_reproduction_results.md`
-- `docs/panel_reproduction_results.md`
-
 The output tables and figures are regenerated files. They are kept in the
 repository because the final submission is expected to include inspectable
 results as well as runnable code.

@@ -404,8 +404,7 @@ def render_data_dictionary(dictionary: pd.DataFrame) -> str:
     lines = [
         "## Cross-Sectional Model Variables",
         "",
-        "This section covers the cross-sectional inputs prepared for Kinga's",
-        "Phase 2 work. It is appended by `scripts/run_cross_section_data.py`.",
+        "This section covers the prepared cross-sectional model inputs.",
         "",
         "Canonical loader conventions:",
         "",
@@ -438,7 +437,7 @@ def write_cross_section_preparation_outputs() -> CrossSectionPreparationResult:
 
     output_dir = PROJECT_ROOT / "outputs" / "cross_section"
     intermediate_dir = PROJECT_ROOT / "outputs" / "intermediate"
-    docs_dir = PROJECT_ROOT / "docs"
+    docs_dir = PROJECT_ROOT / "outputs" / "logs"
     output_dir.mkdir(parents=True, exist_ok=True)
     intermediate_dir.mkdir(parents=True, exist_ok=True)
     docs_dir.mkdir(parents=True, exist_ok=True)
@@ -447,7 +446,7 @@ def write_cross_section_preparation_outputs() -> CrossSectionPreparationResult:
     summary_path = output_dir / "cross_section_preparation_summary.csv"
     model_data4_path = intermediate_dir / "cross_section_model_data4_prepared.csv"
     model_data4_o_path = intermediate_dir / "cross_section_model_data4_o_prepared.csv"
-    data_dictionary_path = docs_dir / "_data_dictionary_cross_section.md"
+    data_dictionary_path = docs_dir / "cross_section_data_dictionary.md"
 
     inventory.to_csv(inventory_path, index=False)
     summary.to_csv(summary_path, index=False)

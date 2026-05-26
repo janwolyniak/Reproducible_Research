@@ -13,16 +13,7 @@ OUTPUT_DIRS = (
 )
 
 GENERATED_OUTPUT_FILES = (
-    "docs/_data_dictionary_cross_section.md",
-    "docs/_data_dictionary_panel.md",
-    "docs/cross_section_reproduction.md",
-    "docs/data_dictionary.md",
     "docs/data_inventory.csv",
-    "docs/cross_section_reproduction_results.md",
-    "docs/panel_reproduction.md",
-    "docs/panel_reproduction_results.md",
-    "docs/phase0_audit.md",
-    "docs/reproduction_results.md",
     "outputs/cross_section/cross_section_data_inventory.csv",
     "outputs/cross_section/cross_section_preparation_summary.csv",
     "outputs/cross_section/descriptive_statistics.csv",
@@ -86,19 +77,12 @@ GENERATED_OUTPUT_FILES = (
 
 CORE_INPUT_FILES = (
     "2400-LIC-FII.pdf",
-    "OUTLINE.md",
-    "TODO.md",
     "README.md",
     "docs/ai_disclosure.md",
     "docs/contributions.md",
     "docs/limitations.md",
     "docs/methodology.md",
     "docs/reproduction_contract.md",
-    "docs/cross_section_reproduction_results.md",
-    "docs/data_dictionary.md",
-    "docs/panel_reproduction_results.md",
-    "docs/reproduction_results.md",
-    "docs/source_annotations.md",
     "outputs/README.md",
     "scripts/audit_phase0.py",
     "scripts/inventory_data.py",

@@ -142,7 +142,7 @@ Tables A6-A8.
 
 | Current artifact | Role in audit | Python replacement target |
 | --- | --- | --- |
-| `2400-LIC-FII.pdf` | Paper and final reference tables | `docs/reproduction_contract.md`, later `docs/reproduction_results.md` |
+| `2400-LIC-FII.pdf` | Paper and final reference tables | `docs/reproduction_contract.md` |
 | `cross-section/inorder.R` | Cross-sectional R workflow | `src/repro_research/cross_section.py` and `scripts/run_cross_section.py` |
 | `panel/inorder_panel.R` | Panel R workflow | `src/repro_research/panel.py` and `scripts/run_panel.py` |
 | `helpers/rds_to_csv.py` | Existing RDS conversion utility | Keep as shared helper; use directly or wrap from pipeline |
@@ -211,7 +211,7 @@ specific exception:
 | Plot data series | Underlying data must match; rendered pixels are not exact targets |
 
 If exact matching fails because of a known package convention, document the
-package, estimator, and observed difference in `docs/reproduction_results.md`.
+package, estimator, and observed difference in `docs/limitations.md`.
 
 ## Known Limitations and Audit Findings
 
@@ -221,8 +221,8 @@ package, estimator, and observed difference in `docs/reproduction_results.md`.
    `model_data`, `model_data2`, `model_data4`, `model_data4_o`, `small_plm`,
    `small_pdata`, `small_pdata.frame`, `model`, `re4_olv`, and related objects.
    The `.rds` files are therefore treated as the current data source of record.
-3. Variable names are inconsistent across artifacts, but the Phase 0 audit now
-   inventories the variants that loaders must normalize:
+3. Variable names are inconsistent across artifacts. The Python loaders
+   normalize these variants:
    - `GDP_growth` in cross-sectional data versus `GDPgrowth` in panel data.
    - `tot`, `tot2`, and `tot_growth` across paper, R scripts, and data files.
    - `Country Code`, `Country_Code`, `Country_Name`, `Country`, and `cname`.
@@ -230,14 +230,12 @@ package, estimator, and observed difference in `docs/reproduction_results.md`.
    - `gov_exp_milit` versus `gov_exp_mil`.
 4. The cross-sectional paper text says five outliers were removed and refers to
    a final sample of 157 countries, but the main reported OLS tables use 121-122
-   observations after model-wise missing-value handling. The Phase 0 audit now
+   observations after model-wise missing-value handling. The Python workflow
    verifies both the five-country influence rule and the model-wise missingness
    counts from tracked files.
 5. The panel script contains likely copy-paste issues in diagnostics, including
    tests run on an undefined `model` until it is later assigned as `fixed`.
-   Panel diagnostics and robust-covariance checks are therefore a Phase 4 model
-   implementation requirement, not a Phase 0 data-audit blocker. The Python
-   reproduction must document any finite-sample correction differences from
+   The Python reproduction documents finite-sample correction differences from
    R `plm`.
 6. Full upstream raw/bulk-download provenance is intentionally out of scope for
    this reproduction. The audit treats tracked source-level extracts in
@@ -247,13 +245,3 @@ package, estimator, and observed difference in `docs/reproduction_results.md`.
 7. The PDF is the source for the research question, variable definitions, and
    reported target tables. The R exported HTML files are the source for exact
    machine-readable table values where parsing is easier than PDF extraction.
-
-## Phase Acceptance Criteria
-
-Phase 0 is complete when:
-
-- This contract exists and is committed.
-- `TODO.md` includes a visible audit issue section for missing data, ambiguous
-  variables, and undocumented transformations.
-- Later implementation phases can refer to this document for model scope,
-  output scope, and numerical comparison rules.

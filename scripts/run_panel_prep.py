@@ -1,4 +1,4 @@
-"""Phase 2 panel preparation entry point.
+"""Panel preparation entry point.
 
 Loads the three tracked panel datasets, applies the canonical transformations,
 and writes the prepared frames as CSV under ``outputs/intermediate/panel/`` so

@@ -22,7 +22,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--generated-outputs",
         action="store_true",
-        help="Also require the final Phase 5 artifact manifest.",
+        help="Also require the generated-output artifact manifest.",
     )
     return parser
 

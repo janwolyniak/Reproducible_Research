@@ -30,7 +30,7 @@ from repro_research.paths import PROJECT_ROOT
 
 OUTPUT_DIR = PROJECT_ROOT / "outputs" / "cross_section"
 FIGURE_DIR = OUTPUT_DIR / "figures"
-DOCS_DIR = PROJECT_ROOT / "docs"
+DOCS_DIR = PROJECT_ROOT / "outputs" / "logs"
 
 CORRELATION_VARIABLES = (
     "GDP_growth",
@@ -674,14 +674,14 @@ def write_cross_section_documentation(
     paths: tuple[Path, ...], docs_dir: Path = DOCS_DIR
 ) -> Path:
     docs_dir.mkdir(parents=True, exist_ok=True)
-    path = docs_dir / "cross_section_reproduction.md"
+    path = docs_dir / "cross_section_summary.md"
     artifact_lines = "\n".join(f"- `{_display_path(artifact)}`" for artifact in paths)
     path.write_text(
         "\n".join(
             [
                 "# Cross-Sectional Reproduction",
                 "",
-                "This document summarizes the Python implementation of Phase 3.",
+                "This document summarizes the Python cross-sectional implementation.",
                 "The source workflow is `cross-section/inorder.R`; the tracked RDS",
                 "files are treated as authoritative because the R script is an",
                 "exploratory notebook-like script rather than a clean end-to-end run.",
@@ -711,7 +711,7 @@ def write_cross_section_documentation(
                 '  matching the R workflow\'s `sandwich::vcovHC(..., type = "HC3")`',
                 "  publication-table intent.",
                 "- `model_data4` has no `tot2` column in the tracked file, so the Python",
-                "  loader uses the canonical `terms_trade` fallback documented in Phase 2.",
+                "  loader uses the canonical `terms_trade` fallback.",
                 "  The outlier-filtered models use `model_data4_o`, where `tot2` is",
                 "  present and mapped to `terms_trade`.",
                 "- Diagnostics reproduce RESET, Shapiro-Wilk, Breusch-Pagan,",

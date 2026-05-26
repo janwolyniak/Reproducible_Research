@@ -78,9 +78,7 @@ It reproduces:
 - RESET, normality, heteroskedasticity, Durbin-Watson, VIF, leverage,
   standardized residual, and Cook's-distance diagnostics.
 
-Outputs are written to `outputs/cross_section/`. The cross-sectional comparison
-against R reference outputs is documented in
-`docs/cross_section_reproduction_results.md`.
+Outputs are written to `outputs/cross_section/`.
 
 ## Panel Workflow
 
@@ -104,8 +102,7 @@ It reproduces:
   Python support or local implementation is available.
 - Alternative fixed-effects regressions for compliance components.
 
-Outputs are written to `outputs/panel/`. The panel comparison against R
-reference outputs is documented in `docs/panel_reproduction_results.md`.
+Outputs are written to `outputs/panel/`.
 
 ## Full Pipeline
 
@@ -115,9 +112,8 @@ The single reviewer command is:
 python scripts/run_all.py
 ```
 
-That command validates the repository, regenerates the Phase 0 source audit,
-rebuilds prepared data outputs, runs the cross-sectional and panel
-reproductions, refreshes generated documentation, writes
+That command validates the repository, rebuilds prepared data outputs, runs the
+cross-sectional and panel reproductions, refreshes generated metadata, writes
 `outputs/logs/run_all_summary.txt`, and checks the generated-output manifest.
 
 The manifest can also be checked directly:
@@ -131,8 +127,8 @@ and container workflows exercise the same reproduction path.
 
 ## Result Interpretation
 
-The Python outputs are interpreted against the original paper and R outputs in
-`docs/reproduction_results.md`. The short version is:
+The Python outputs are interpreted against the original paper and R outputs.
+The short version is:
 
 - The cross-sectional reproduction preserves the paper's main null result for
   constitutional-compliance coefficients after controls.

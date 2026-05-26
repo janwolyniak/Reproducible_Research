@@ -38,13 +38,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--docs-dir",
         type=Path,
-        default=ROOT / "docs",
-        help="Directory where the panel reproduction note is written.",
+        default=ROOT / "outputs" / "logs",
+        help="Directory where the panel summary is written.",
     )
     parser.add_argument(
         "--skip-plots",
         action="store_true",
-        help="Regenerate tables and documentation without refreshing PNG figures.",
+        help="Regenerate tables without refreshing PNG figures.",
     )
     return parser
 

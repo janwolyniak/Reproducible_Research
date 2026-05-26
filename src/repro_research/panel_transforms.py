@@ -1,4 +1,4 @@
-"""Panel transformations used by the Phase 4 model specifications.
+"""Panel transformations used by the model specifications.
 
 The R workflow expresses transformations inside ``plm`` formulas, e.g.
 ``log(cc_total + 2)`` and ``log(lag(GDPpc2015, 2))``. The functions below
@@ -120,7 +120,7 @@ def subset_by_legal_origin(df: pd.DataFrame, code: str) -> pd.DataFrame:
 
 
 def prepare_for_models(df: pd.DataFrame) -> pd.DataFrame:
-    """Apply the canonical chain of transformations used by Phase 4 models."""
+    """Apply the canonical panel transformations."""
     out = add_log_compliance(df)
     out = add_lag_log_gdppc(out)
     out = add_tot_trade_interaction(out)

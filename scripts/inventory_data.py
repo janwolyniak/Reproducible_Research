@@ -15,9 +15,7 @@ from repro_research.data_io import build_dataset_specs, build_inventory  # noqa:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Inventory tracked Phase 2 source datasets."
-    )
+    parser = argparse.ArgumentParser(description="Inventory tracked source datasets.")
     parser.add_argument(
         "--inventory-output",
         type=Path,
@@ -27,7 +25,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--dictionary-output",
         type=Path,
-        default=ROOT / "docs" / "data_dictionary.md",
+        default=ROOT / "outputs" / "logs" / "data_dictionary.md",
         help="Markdown path for the shared data dictionary scaffold.",
     )
     return parser

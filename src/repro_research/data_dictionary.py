@@ -23,12 +23,7 @@ INVENTORY_COLUMNS = (
     "dtypes_json",
 )
 
-# Contributor-owned fragments appended to the generated dictionary so the
-# panel and cross-section lanes can extend it without forking the generator.
-CONTRIBUTOR_FRAGMENTS: tuple[str, ...] = (
-    "docs/_data_dictionary_panel.md",
-    "docs/_data_dictionary_cross_section.md",
-)
+CONTRIBUTOR_FRAGMENTS: tuple[str, ...] = ()
 
 
 def write_inventory_csv(rows: list[DatasetInventoryRow], output_path: Path) -> Path:
@@ -46,16 +41,13 @@ def build_data_dictionary_markdown(rows: list[DatasetInventoryRow]) -> str:
     lines = [
         "# Data Dictionary",
         "",
-        "This file is the Phase 2 shared data inventory for the Python "
-        "reproduction. It records the tracked source datasets, their row and "
-        "column counts, detected country/year identifier columns, and missing "
-        "cell counts.",
+        "This file records the tracked source datasets, their row and column "
+        "counts, detected country/year identifier columns, and missing cell "
+        "counts.",
         "",
-        "Model-specific variable definitions, transformations, and final "
-        "schemas remain contributor-owned: Kinga for the cross-sectional "
-        "reproduction and Iwo for the panel reproduction. They should extend "
-        "this document once their Phase 2 preparation code fixes the final "
-        "model variables.",
+        "Model-specific variables and transformations are implemented in "
+        "`src/repro_research/cross_section_data.py` and "
+        "`src/repro_research/panel_data.py`.",
         "",
         "The machine-readable inventory is regenerated at "
         "`docs/data_inventory.csv` by `python scripts/inventory_data.py` and "

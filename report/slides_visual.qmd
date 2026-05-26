@@ -110,9 +110,6 @@ from scratch in Python.
 
 # The cross-section {.center background-color="#f4f8ff"}
 
-::: {.notes}
-Kinga: ~5 minutes.
-:::
 
 ## What we expected
 
@@ -180,9 +177,6 @@ index specifically that doesn't pick up the signal here.
 
 # The panel {.center background-color="#e8f5e9"}
 
-::: {.notes}
-Iwo: ~5 minutes.
-:::
 
 ## Why we trust the panel more
 
@@ -270,9 +264,6 @@ institutional plumbing for organising politically.
 
 # Reproducibility {.center background-color="#f8f4ff"}
 
-::: {.notes}
-Jan: ~4 minutes including live demo.
-:::
 
 ## One command
 
@@ -309,20 +300,13 @@ deck, and the full reviewer report appear on the host laptop.
 **Total time: ~3 minutes** on a modern laptop.
 :::
 
-## Live — what you should see right now {background-color="#f8f4ff"}
+## Generated files {background-color="#f8f4ff"}
 
 ::: {.incremental}
-- Pulling image → image ID printed.
-- Container running → six pipeline scripts, each ending `ok`.
-- Quarto rendering `report.qmd` and `slides_visual.qmd`.
-- Host directory `outputs/report/` populates with HTML files.
-- `python scripts/demo.py` prints the headline numbers from disk.
-:::
-
-. . .
-
-::: {.callout-tip appearance="simple"}
-*Switch to terminal now — this is where Jan demonstrates the actual run.*
+- `final_presentation_report.html`
+- `report.html`
+- `slides.html`
+- `slides_visual.html`
 :::
 
 # Wrap-up {.center}

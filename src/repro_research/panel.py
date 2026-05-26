@@ -1,4 +1,4 @@
-"""Phase 4 panel reproduction.
+"""Panel reproduction.
 
 Mirrors ``repro_research.cross_section`` for the panel side: descriptive stats,
 correlation, regression families, specification tests, diagnostics, robust
@@ -41,7 +41,7 @@ from repro_research.paths import PROJECT_ROOT  # noqa: E402
 
 OUTPUT_DIR = PROJECT_ROOT / "outputs" / "panel"
 FIGURE_DIR = OUTPUT_DIR / "figures"
-DOCS_DIR = PROJECT_ROOT / "docs"
+DOCS_DIR = PROJECT_ROOT / "outputs" / "logs"
 
 ModelKind = Literal["pooling", "between", "first_difference", "fixed", "random"]
 
@@ -496,7 +496,7 @@ def panel_serial_correlation_test(fit: PanelFitResult) -> float | None:
 
 
 def wooldridge_serial_correlation(fit: PanelFitResult) -> float | None:
-    """Backward-compatible alias for the Phase 4 serial-correlation diagnostic."""
+    """Backward-compatible alias for the serial-correlation diagnostic."""
     return panel_serial_correlation_test(fit)
 
 
@@ -727,7 +727,7 @@ def write_panel_documentation(
     docs_dir: Path = DOCS_DIR,
 ) -> Path:
     docs_dir.mkdir(parents=True, exist_ok=True)
-    path = docs_dir / "panel_reproduction.md"
+    path = docs_dir / "panel_summary.md"
     artifact_lines = "\n".join(f"- `{_display_path(artifact)}`" for artifact in paths)
     fd_omissions = _first_difference_omissions(summary)
     if not fd_omissions:
@@ -754,7 +754,7 @@ def write_panel_documentation(
             [
                 "# Panel Reproduction",
                 "",
-                "This document summarises the Python implementation of Phase 4.",
+                "This document summarises the Python panel implementation.",
                 "The source workflow is `panel/inorder_panel.R`; the tracked RDS",
                 "files are treated as authoritative because the R script is an",
                 "exploratory notebook-like script rather than a clean end-to-end run.",

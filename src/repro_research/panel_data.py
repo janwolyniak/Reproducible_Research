@@ -13,8 +13,7 @@ the shared data reader, cast ``Year`` to integer, coerce ``fertility`` to
 ``float`` (the R script does this manually for ``small_plm``), strip ``Country``
 whitespace, add the canonical ``country`` column via
 :mod:`repro_research.country_naming`, and assert ``(country, Year)`` uniqueness.
-The panel ``MultiIndex`` is not set here -- Phase 4 model fitting does that
-explicitly when it needs it.
+The panel ``MultiIndex`` is set during model fitting when needed.
 """
 
 from __future__ import annotations
