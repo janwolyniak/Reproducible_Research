@@ -2,8 +2,6 @@ project:
   type: default
   render:
     - report.qmd
-    - slides.qmd
-    - slides_visual.qmd
 
 execute:
   freeze: false

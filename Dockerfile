@@ -24,7 +24,7 @@ RUN apt-get update \
         zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Quarto CLI — required to render report/report.qmd and report/slides.qmd.
+# Quarto CLI — required to render report/report.qmd.
 RUN set -eux; \
     arch="$(dpkg --print-architecture)"; \
     case "$arch" in \

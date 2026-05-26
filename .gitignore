@@ -86,3 +86,7 @@ outputs/intermediate/*
 outputs/report/*
 !outputs/report/
 !outputs/report/.gitkeep
+
+# Transient Quarto render copies left next to the .qmd sources
+report/*.html
+report/.quarto/

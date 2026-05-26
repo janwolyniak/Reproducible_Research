@@ -43,19 +43,16 @@ docker run --rm `
   janwolyniak/reproducible-research-lic-fii
 ```
 
-Open the generated files from `rr-final-demo/outputs/report/`:
+The single deliverable lands in `rr-final-demo/outputs/report/`:
 
 | File | Purpose |
 | --- | --- |
-| `final_presentation_report.html` | Executed notebook report with the main result path. |
-| `report.html` | Full report with tables, figures, and interpretation. |
-| `slides.html` | Concise Reveal.js slide deck. |
-| `slides_visual.html` | Alternative visual slide deck. |
+| `report.html` | The presentation report: full study walkthrough, R-vs-Python comparison, figures, and interpretation. |
 
 On macOS:
 
 ```bash
-open outputs/report/final_presentation_report.html
+open outputs/report/report.html
 ```
 
 ## What the Container Runs
@@ -72,9 +69,7 @@ It runs:
 2. cross-sectional data preparation and OLS reproduction,
 3. panel data preparation, estimators, specification tests, and diagnostics,
 4. generated-output validation,
-5. Quarto rendering for `report.html`, `slides.html`, and
-   `slides_visual.html`,
-6. Jupyter execution/export for `final_presentation_report.html`.
+5. Quarto rendering of the presentation report to `report.html`.
 
 ## Research Design
 
@@ -97,8 +92,7 @@ The R source of truth is:
 | --- | --- |
 | `src/repro_research/` | Python package for data loading, transformations, models, diagnostics, validation, and orchestration. |
 | `scripts/` | Command-line entry points for validation, pipeline runs, and report generation. |
-| `notebooks/final_presentation_report.ipynb` | Executable notebook exported to `final_presentation_report.html`. |
-| `report/` | Quarto report and Reveal.js slide sources. |
+| `report/` | Quarto source (`report.qmd`) for the presentation report. |
 | `cross-section/` | Original cross-sectional R workflow, source data, and reference outputs. |
 | `panel/` | Original panel R workflow, source data, and reference outputs. |
 | `docs/` | Final methodology, limitations, contribution, AI-use, and reproduction-contract documents. |

@@ -1,4 +1,4 @@
-"""Reviewer entry point: run the full pipeline, then render report artifacts.
+"""Reviewer entry point: run the full pipeline, then render the report.
 
 This script is the default Docker command. It is also runnable locally if
 Quarto is installed on the host.
@@ -18,7 +18,6 @@ sys.path.insert(0, str(ROOT / "src"))
 from repro_research.pipeline import RunAllOptions, run_all  # noqa: E402
 
 REPORT_DIR = ROOT / "report"
-NOTEBOOK_PATH = ROOT / "notebooks" / "final_presentation_report.ipynb"
 OUTPUT_REPORT_DIR = ROOT / "outputs" / "report"
 
 
@@ -26,7 +25,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
             "Run the full Python reproduction pipeline and render the Quarto "
-            "report and slides to outputs/report/."
+            "report to outputs/report/report.html."
         )
     )
     parser.add_argument(
@@ -47,21 +46,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--strict-validation",
         action="store_true",
         help="Pass --strict-validation to the pipeline.",
-    )
-    parser.add_argument(
-        "--report-only",
-        action="store_true",
-        help="Render only report.qmd (skip slides.qmd).",
-    )
-    parser.add_argument(
-        "--slides-only",
-        action="store_true",
-        help="Render only slides.qmd (skip report.qmd).",
-    )
-    parser.add_argument(
-        "--skip-notebook",
-        action="store_true",
-        help="Skip executing/exporting notebooks/final_presentation_report.ipynb.",
     )
     return parser
 
@@ -111,65 +95,11 @@ def _render_quarto(target: str, quarto_bin: str) -> int:
     OUTPUT_REPORT_DIR.mkdir(parents=True, exist_ok=True)
     shutil.copy2(rendered, destination)
     print(f"[generate_report] Wrote {destination}", flush=True)
-    return 0
 
-
-def _render_notebook() -> int:
-    if not NOTEBOOK_PATH.exists():
-        print(
-            f"[generate_report] Notebook source missing: {NOTEBOOK_PATH}",
-            file=sys.stderr,
-        )
-        return 1
-
-    jupyter_bin = shutil.which("jupyter")
-    if jupyter_bin is None:
-        print(
-            "[generate_report] Jupyter CLI not found on PATH. Install "
-            "requirements.txt or run inside the project's Docker image.",
-            file=sys.stderr,
-        )
-        return 2
-
-    print(
-        "[generate_report] Executing final_presentation_report.ipynb via nbconvert ...",
-        flush=True,
-    )
-    OUTPUT_REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    completed = subprocess.run(
-        [
-            jupyter_bin,
-            "nbconvert",
-            "--execute",
-            "--to",
-            "html",
-            "--output",
-            "final_presentation_report",
-            "--output-dir",
-            str(OUTPUT_REPORT_DIR),
-            "--ExecutePreprocessor.timeout=900",
-            str(NOTEBOOK_PATH),
-        ],
-        cwd=ROOT,
-        check=False,
-    )
-    if completed.returncode != 0:
-        print(
-            "[generate_report] Notebook execution/export failed "
-            f"(exit {completed.returncode}).",
-            file=sys.stderr,
-        )
-        return completed.returncode
-
-    destination = OUTPUT_REPORT_DIR / "final_presentation_report.html"
-    if not destination.exists():
-        print(
-            f"[generate_report] nbconvert reported success but {destination} is missing.",
-            file=sys.stderr,
-        )
-        return 1
-
-    print(f"[generate_report] Wrote {destination}", flush=True)
+    # Keep a single report in outputs/: remove the transient copy Quarto leaves
+    # next to the source, plus its render cache.
+    rendered.unlink(missing_ok=True)
+    shutil.rmtree(REPORT_DIR / ".quarto", ignore_errors=True)
     return 0
 
 
@@ -192,35 +122,16 @@ def main() -> int:
 
     OUTPUT_REPORT_DIR.mkdir(parents=True, exist_ok=True)
 
-    targets: list[str] = []
-    if args.slides_only:
-        targets = ["slides.qmd", "slides_visual.qmd"]
-    elif args.report_only:
-        targets = ["report.qmd"]
-    else:
-        targets = ["report.qmd", "slides.qmd", "slides_visual.qmd"]
-
-    failures = 0
-    for target in targets:
-        code = _render_quarto(target, quarto_bin)
-        if code != 0:
-            failures += 1
-
-    if not args.skip_notebook:
-        code = _render_notebook()
-        if code != 0:
-            failures += 1
-
-    if failures:
+    code = _render_quarto("report.qmd", quarto_bin)
+    if code != 0:
         print(
-            f"[generate_report] Rendering completed with {failures} failure(s).",
+            "[generate_report] Rendering failed.",
             file=sys.stderr,
         )
         return 1
 
     print(
-        "[generate_report] Done. Open outputs/report/final_presentation_report.html, "
-        "outputs/report/report.html, and outputs/report/slides.html.",
+        "[generate_report] Done. Open outputs/report/report.html.",
         flush=True,
     )
     return 0
