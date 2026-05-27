@@ -379,8 +379,9 @@ differences is in `docs/limitations.md`.
 # 7 · Reproducibility: one command on the lab laptop
 
 The container's default command runs the entire pipeline, validates the output
-manifest, and writes this Quarto report source back to the host. Nothing is
-built or installed on the host beyond Docker itself:
+manifest, writes this Quarto report source back to the host, and renders a
+browser-ready HTML version. Nothing is built or installed on the host beyond
+Docker itself:
 
 ```bash
 docker pull janwolyniak/reproducible-research-lic-fii
@@ -397,12 +398,13 @@ docker run --rm -v "${PWD}/outputs/report:/app/outputs/report" `
   janwolyniak/reproducible-research-lic-fii
 ```
 
-The `outputs/report/report.qmd` file is written back to the host through the
-volume mount. Under the hood the container runs `scripts/generate_report.py`,
-which calls `scripts/run_all.py` (source audit, data preparation,
-cross-section, panel, then manifest validation) and then publishes this QMD
-source. The per-script status is logged in `outputs/logs/run_all_summary.txt`,
-so a failed step is easy to spot.
+The `outputs/report/report.html` file is the browser-ready report, and
+`outputs/report/report.qmd` is the source that produced it. Both are written
+back to the host through the volume mount. Under the hood the container runs
+`scripts/generate_report.py`, which calls `scripts/run_all.py` (source audit,
+data preparation, cross-section, panel, then manifest validation), publishes
+the QMD source, and renders it with Quarto. The per-script status is logged in
+`outputs/logs/run_all_summary.txt`, so a failed step is easy to spot.
 
 # 8 · Limitations and team
 
@@ -424,4 +426,4 @@ Per-author Git evidence is recorded in `docs/contributions.md`.
 
 ---
 
-*Published by the Docker image from `report/report.qmd`.*
+*Rendered by the Docker image from `report/report.qmd`.*

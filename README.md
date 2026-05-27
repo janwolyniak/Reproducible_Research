@@ -2,8 +2,8 @@
 
 This project reproduces the empirical workflows from Kinga Kucharska's thesis,
 `2400-LIC-FII.pdf`, in Python. It rebuilds the original R cross-sectional and
-panel analyses, regenerates the tables and figures, and publishes the Quarto
-report source from a public Docker image.
+panel analyses, regenerates the tables and figures, and renders a browser-ready
+report from a public Docker image.
 
 Authors:
 
@@ -19,7 +19,7 @@ The public Docker image is:
 janwolyniak/reproducible-research-lic-fii
 ```
 
-Run the complete analysis and publish the report source:
+Run the complete analysis and render the report:
 
 ```bash
 mkdir -p rr-final-demo/outputs/report
@@ -43,16 +43,17 @@ docker run --rm `
   janwolyniak/reproducible-research-lic-fii
 ```
 
-The single deliverable lands in `rr-final-demo/outputs/report/`:
+The deliverables land in `rr-final-demo/outputs/report/`:
 
 | File | Purpose |
 | --- | --- |
-| `report.qmd` | The presentation report source: full study walkthrough, R-vs-Python comparison, figures, and interpretation. |
+| `report.html` | Browser-ready presentation report rendered from the Quarto source inside Docker. |
+| `report.qmd` | The Quarto source used to render `report.html`. |
 
 On macOS:
 
 ```bash
-open outputs/report/report.qmd
+open outputs/report/report.html
 ```
 
 ## What the Container Runs
@@ -69,7 +70,8 @@ It runs:
 2. cross-sectional data preparation and OLS reproduction,
 3. panel data preparation, estimators, specification tests, and diagnostics,
 4. generated-output validation,
-5. publication of `report/report.qmd` to `outputs/report/report.qmd`.
+5. publication of `report/report.qmd` and runtime rendering to
+   `outputs/report/report.html`.
 
 ## Research Design
 
@@ -117,14 +119,15 @@ python scripts/run_all.py
 python scripts/validate_project.py --generated-outputs
 ```
 
-Publish the Quarto report source locally:
+Render the Quarto report locally:
 
 ```bash
 python scripts/generate_report.py
 ```
 
-The Docker and local entry point writes `outputs/report/report.qmd`; it does
-not write a rendered HTML report.
+The Docker and local entry point writes both `outputs/report/report.qmd` and
+`outputs/report/report.html`. Local rendering requires Quarto on `PATH`; Docker
+ships Quarto already.
 
 ## Documentation
 
