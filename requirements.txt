@@ -8,6 +8,7 @@ nbformat>=5.10,<6
 numpy>=1.26,<3
 packaging>=24,<27
 pandas>=2.2,<3
+PyYAML>=6,<7
 pyreadr>=0.5,<0.6
 scipy>=1.11,<2
 seaborn>=0.13,<0.14
