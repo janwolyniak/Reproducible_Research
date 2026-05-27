@@ -31,6 +31,9 @@ htmlcov
 outputs/logs/*
 outputs/intermediate/*
 outputs/report/*
+outputs/cross_section/*.html
+outputs/panel/*.html
+report/*.html
 NEXT_SESSION.md
 .quarto
 report/.quarto

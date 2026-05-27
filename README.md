@@ -2,8 +2,8 @@
 
 This project reproduces the empirical workflows from Kinga Kucharska's thesis,
 `2400-LIC-FII.pdf`, in Python. It rebuilds the original R cross-sectional and
-panel analyses, regenerates the tables and figures, and renders HTML reports
-from a public Docker image.
+panel analyses, regenerates the tables and figures, and publishes the Quarto
+report source from a public Docker image.
 
 Authors:
 
@@ -19,7 +19,7 @@ The public Docker image is:
 janwolyniak/reproducible-research-lic-fii
 ```
 
-Run the complete analysis and report generation:
+Run the complete analysis and publish the report source:
 
 ```bash
 mkdir -p rr-final-demo/outputs/report
@@ -47,12 +47,12 @@ The single deliverable lands in `rr-final-demo/outputs/report/`:
 
 | File | Purpose |
 | --- | --- |
-| `report.html` | The presentation report: full study walkthrough, R-vs-Python comparison, figures, and interpretation. |
+| `report.qmd` | The presentation report source: full study walkthrough, R-vs-Python comparison, figures, and interpretation. |
 
 On macOS:
 
 ```bash
-open outputs/report/report.html
+open outputs/report/report.qmd
 ```
 
 ## What the Container Runs
@@ -69,7 +69,7 @@ It runs:
 2. cross-sectional data preparation and OLS reproduction,
 3. panel data preparation, estimators, specification tests, and diagnostics,
 4. generated-output validation,
-5. Quarto rendering of the presentation report to `report.html`.
+5. publication of `report/report.qmd` to `outputs/report/report.qmd`.
 
 ## Research Design
 
@@ -117,13 +117,14 @@ python scripts/run_all.py
 python scripts/validate_project.py --generated-outputs
 ```
 
-Render reports locally:
+Publish the Quarto report source locally:
 
 ```bash
 python scripts/generate_report.py
 ```
 
-Local report rendering requires Quarto on `PATH`.
+The Docker and local entry point writes `outputs/report/report.qmd`; it does
+not write a rendered HTML report.
 
 ## Documentation
 
@@ -148,4 +149,5 @@ docker buildx build \
 
 The image should remain public and should not include local secrets. The
 `.dockerignore` excludes local environments, git metadata, caches, generated
-report files, `.env` files, key files, token files, and secret folders.
+report files, generated HTML outputs, `.env` files, key files, token files, and
+secret folders.

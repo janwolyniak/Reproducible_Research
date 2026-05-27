@@ -1,14 +1,9 @@
-"""Reviewer entry point: run the full pipeline, then render the report.
-
-This script is the default Docker command. It is also runnable locally if
-Quarto is installed on the host.
-"""
+"""Reviewer entry point: run the full pipeline, then publish the QMD report."""
 
 from __future__ import annotations
 
 import argparse
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 
@@ -24,8 +19,8 @@ OUTPUT_REPORT_DIR = ROOT / "outputs" / "report"
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Run the full Python reproduction pipeline and render the Quarto "
-            "report to outputs/report/report.html."
+            "Run the full Python reproduction pipeline and copy the Quarto "
+            "source report to outputs/report/report.qmd."
         )
     )
     parser.add_argument(
@@ -40,7 +35,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--skip-plots",
         action="store_true",
-        help="Pass --skip-plots to the pipeline (still re-renders the report).",
+        help="Pass --skip-plots to the pipeline.",
     )
     parser.add_argument(
         "--strict-validation",
@@ -48,10 +43,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="Pass --strict-validation to the pipeline.",
     )
     return parser
-
-
-def _quarto_executable() -> str | None:
-    return shutil.which("quarto")
 
 
 def _run_pipeline(skip_plots: bool, strict_validation: bool) -> int:
@@ -63,42 +54,25 @@ def _run_pipeline(skip_plots: bool, strict_validation: bool) -> int:
     code = run_all(options)
     if code != 0:
         print(
-            f"[generate_report] Pipeline exited with code {code}. Aborting render.",
+            f"[generate_report] Pipeline exited with code {code}. Aborting report publication.",
             file=sys.stderr,
         )
     return code
 
 
-def _render_quarto(target: str, quarto_bin: str) -> int:
-    print(f"[generate_report] Rendering {target} via Quarto ...", flush=True)
-    completed = subprocess.run(
-        [quarto_bin, "render", target, "--to", "html"],
-        cwd=REPORT_DIR,
-        check=False,
-    )
-    if completed.returncode != 0:
-        print(
-            f"[generate_report] Quarto failed for {target} (exit {completed.returncode}).",
-            file=sys.stderr,
-        )
-        return completed.returncode
-
-    rendered = REPORT_DIR / Path(target).with_suffix(".html").name
-    if not rendered.exists():
-        print(
-            f"[generate_report] Quarto reported success but {rendered} is missing.",
-            file=sys.stderr,
-        )
+def _publish_qmd_report(target: str) -> int:
+    source = REPORT_DIR / target
+    if not source.exists():
+        print(f"[generate_report] Missing report source: {source}", file=sys.stderr)
         return 1
 
-    destination = OUTPUT_REPORT_DIR / rendered.name
     OUTPUT_REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(rendered, destination)
+    destination = OUTPUT_REPORT_DIR / source.name
+    shutil.copy2(source, destination)
     print(f"[generate_report] Wrote {destination}", flush=True)
 
-    # Keep a single report in outputs/: remove the transient copy Quarto leaves
-    # next to the source, plus its render cache.
-    rendered.unlink(missing_ok=True)
+    for html_path in (OUTPUT_REPORT_DIR / "report.html", REPORT_DIR / "report.html"):
+        html_path.unlink(missing_ok=True)
     shutil.rmtree(REPORT_DIR / ".quarto", ignore_errors=True)
     return 0
 
@@ -111,27 +85,16 @@ def main() -> int:
         if pipeline_code != 0:
             return pipeline_code
 
-    quarto_bin = _quarto_executable()
-    if quarto_bin is None:
-        print(
-            "[generate_report] Quarto CLI not found on PATH. Install Quarto or "
-            "run inside the project's Docker image, which ships Quarto.",
-            file=sys.stderr,
-        )
-        return 2
-
-    OUTPUT_REPORT_DIR.mkdir(parents=True, exist_ok=True)
-
-    code = _render_quarto("report.qmd", quarto_bin)
+    code = _publish_qmd_report("report.qmd")
     if code != 0:
         print(
-            "[generate_report] Rendering failed.",
+            "[generate_report] Report publication failed.",
             file=sys.stderr,
         )
         return 1
 
     print(
-        "[generate_report] Done. Open outputs/report/report.html.",
+        "[generate_report] Done. Open outputs/report/report.qmd.",
         flush=True,
     )
     return 0
