@@ -22,8 +22,11 @@ COPY requirements.txt pyproject.toml README.md ./
 COPY src ./src
 
 RUN python -m pip install --upgrade pip setuptools wheel \
-    && python -m pip install --prefix=/install --ignore-installed -r requirements.txt \
-    && python -m pip install --prefix=/install --no-deps .
+    && python -m pip install --prefix=/install --ignore-installed --no-compile -r requirements.txt \
+    && python -m pip install --prefix=/install --no-deps --no-compile . \
+    && find /install -depth \
+        \( -type d -name __pycache__ -o -type f -name "*.py[co]" \) \
+        -exec rm -rf {} +
 
 
 FROM python:3.11-slim
